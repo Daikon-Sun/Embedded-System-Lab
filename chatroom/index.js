@@ -3,16 +3,17 @@ const bodyParser = require('body-parser');
 
 const app = express();
 
+app.set('view engine', 'jade')
+app.set('views', __dirname + '/views')
+
 app.get('/', function(req, res){
-    var home = "<div id='chatroombox'><div id='userlist' style='color:red;'>hi</div><div id='chatarea'>yo</div></div>"
-    res.send(home);
+    res.render('index');
 })
 var server = app.listen(3000, function () {
    var host = server.address().address
    var port = server.address().port
    
    console.log("Example app listening at http://%s:%s", host, port)
-   //console.log("Example app listening at")
 })
 
 /*
