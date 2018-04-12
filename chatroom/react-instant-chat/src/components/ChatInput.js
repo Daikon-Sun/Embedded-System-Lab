@@ -9,7 +9,7 @@ class ChatInput extends React.Component {
     this.submitHandler = this.submitHandler.bind(this);
     this.textChangeHandler = this.textChangeHandler.bind(this);
   }
-  
+
   submitHandler(event) {
     // Stop the form from refreshing the page on submit
     event.preventDefault();

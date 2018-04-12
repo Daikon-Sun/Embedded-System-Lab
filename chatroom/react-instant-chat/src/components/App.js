@@ -2,14 +2,13 @@ require('../styles/App.css');
 require('../styles/Login.css');
 
 import React from 'react';
-import ChatApp from './ChatApp';
 import ChatLobby from './ChatLobby';
 
 class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = { username: '' };
+    this.state = { username: '', submitted: false };
 
     // Bind 'this' to event handlers. React ES6 does not do this by default
     this.usernameChangeHandler = this.usernameChangeHandler.bind(this);
@@ -29,7 +28,9 @@ class App extends React.Component {
 
     if (this.state.submitted) {
       // Form was submitted, now show the main App
-      return ( <ChatLobby username={this.state.username} /> )
+      return (
+        <ChatLobby username={this.state.username} />
+      )
       // return (
       //   <ChatApp username={this.state.username} />
       // );

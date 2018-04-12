@@ -44,6 +44,9 @@ socketIo.on('connection', socket => {
 
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
+    userNameList = userNameList.filter((v, i) => (v != `${username}`))
+    console.log(userNameList);
+    socket.broadcast.emit('server:returnAllUser', userNameList);
   });
 });
 
