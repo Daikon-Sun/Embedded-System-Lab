@@ -3,6 +3,12 @@
   flex-direction: column;
 }
 
+#Lobby {
+  width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+}
+
 .messages {
   overflow-y: scroll;
   overflow-x: hidden;
@@ -64,4 +70,18 @@ h3 {
   font-size: 0.9rem;
   color: #999;
   margin-bottom: 5px;
+}
+
+.signature:hover {
+  background-color: #888;
+}
+.personal-figure {
+  font-size: 200%;
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
+}
+.personal-name {
+  font-size: 200%;
+  margin-top: 0.1em;
+  margin-bottom: 0.1em;
 }
