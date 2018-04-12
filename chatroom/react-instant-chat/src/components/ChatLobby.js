@@ -8,6 +8,8 @@ import config from '../config';
 import Messages from './Messages';
 import ChatInput from './ChatInput';
 
+import Go from './Go';
+
 class ChatLobby extends React.Component {
 
   socket = {};
