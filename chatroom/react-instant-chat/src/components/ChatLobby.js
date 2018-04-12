@@ -1,14 +1,20 @@
+require("babel-core/register");
+require("babel-polyfill");
 require('../styles/ChatLobby.css');
 
 import React from 'react';
-import { Grid, Row, Col } from 'react-bootstrap';
+import { Grid, Row, Col, Modal, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
 import io from 'socket.io-client';
+
+var imageExists = require('image-exists');
+//import isImageUrl from 'is-image-url';
+//var imageExtensions = require('image-extensions');
 
 import config from '../config';
 import Messages from './Messages';
 import ChatInput from './ChatInput';
-
 import Go from './Go';
+
 
 class ChatLobby extends React.Component {
 
@@ -17,15 +23,20 @@ class ChatLobby extends React.Component {
   constructor(props) {
 
     super(props);
-    this.state = {userNameList: [], messages: []};
-    this.sendHandler = this.sendHandler.bind(this);
+
+    this.defaultImageUrl = 'https://thebenclark.files.wordpress.com/2014/03/facebook-default-no-profile-pic.jpg';
+    this.state = {
+      usernameList: [], messages: [], isBattle: false,
+      showSelection: false, imageUrl: this.defaultImageUrl,
+      validImageUrl: 'success'
+    };
 
     // Connect to the server
-    this.socket = io(config.api, { query: `username=${props.username}` }).connect();
+    this.socket = io(config.api, {query: `username=${props.username}`}).connect();
 
     // Listen for messages from the server
-    this.socket.on('server:returnAllUser', userNameList => {
-      this.setState({userNameList});
+    this.socket.on('server:returnAllUser', usernameList => {
+      this.setState({usernameList});
     });
 
     this.socket.emit('client:getAllUser', {});
@@ -35,7 +46,7 @@ class ChatLobby extends React.Component {
     });
   }
 
-  sendHandler(message) {
+  sendHandler = (message) => {
     const messageObject = {
       username: this.props.username,
       message
@@ -46,32 +57,95 @@ class ChatLobby extends React.Component {
     this.addMessage(messageObject);
   }
 
-  addMessage(message) {
+  addMessage = (message) => {
     // Append the message to the component state
     const messages = this.state.messages;
     messages.push(message);
     this.setState({ messages });
   }
 
-  render() {
+  clickType = (name) => {
+    if (name == `${this.props.username}`)
+      this.setState({showSelection: true});
+    else
+      this.setState({isBattle: true});
+  }
+
+  printAllUser = (v, i) => {
     return (
-        <Grid fluid>
-          <Row>
-            <Col md={10}>
-              <div className="container">
-                <h3>React Chat App</h3>
-                <Messages messages={this.state.messages} />
-                <ChatInput onSend={this.sendHandler} />
-              </div>
-            </Col>
-            <Col md={2}>
-              <div> {
-                this.state.userNameList.map((v, i) => (<div key={i}>{v}</div>) )
-              } </div>
-            </Col>
-          </Row>
+      <Row key={i} className="signature" onClick={() => this.clickType(v)}>
+        <Col md={3} className="personal-figure">
+          <img src={this.state.imageUrl} width='39.8em' height='39.8em'/>
+        </Col>
+        <Col md={9} className="personal-name">
+          {v}
+        </Col>
+      </Row>
+    )
+  }
+  handleChange = (e) => {
+    imageExists(
+      e.target.value,
+      (exists) => {
+        if (exists) this.setState({validImageUrl: 'success'});
+        else this.setState({validImageUrl: 'error'});
+      }
+    );
+    if (this.state.validImageUrl == 'success')
+      this.setState({imageUrl: e.target.value});
+    else
+      this.setState({imageUrl: this.defaultImageUrl});
+  }
+
+  render() {
+    if (this.state.isBattle) {
+      return (
+        <div>
           <Go />
-        </Grid>
+        </div>
+      );
+    }
+    return (
+      <Grid fluid>
+        <Modal show={this.state.showSelection} onHide={() => { this.setState({imageUrl: this.defaultImageUrl, showSelection: false}) }}>
+
+          <Modal.Header closeButton>
+            <Modal.Title>Please paste your image url</Modal.Title>
+          </Modal.Header>
+
+          <Modal.Body>
+            <form>
+              <FormGroup controlId="imageUrl" validationState={this.state.validImageUrl} >
+                <FormControl
+                  type="text"
+                  defaultValue={""}
+                  placeholder="Paste image url..."
+                  onChange={this.handleChange}
+                />
+                <FormControl.Feedback />
+                <HelpBlock>Your cover photo will be changed to the image url.</HelpBlock>
+              </FormGroup>
+            </form>
+          </Modal.Body>
+          <Modal.Footer>
+            <Button onClick={ () => this.setState({imageUrl: this.defaultImageUrl, showSelection: false}) }> Close </Button>
+            <Button bsStyle="primary" onClick={ () => { this.defaultImageUrl = this.state.imageUrl; this.setState({showSelection: false}); } }>Save changes</Button>
+          </Modal.Footer>
+
+        </Modal>
+        <Row>
+          <Col md={10}>
+            <div className="container" id="Lobby">
+              <h3>Lobby</h3>
+              <Messages messages={this.state.messages} />
+              <ChatInput onSend={this.sendHandler} />
+            </div>
+          </Col>
+          <Col md={2}> {
+            this.state.usernameList.map(this.printAllUser)
+          } </Col>
+        </Row>
+      </Grid>
     );
   }
 }

@@ -20,7 +20,7 @@ function getDefaultModules() {
       {
         test: /\.(js|jsx)$/,
         include: srcPath,
-        loader: 'eslint-loader'
+        loader: 'babel'
       }
     ],
     loaders: [
