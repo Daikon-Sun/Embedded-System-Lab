@@ -96,6 +96,14 @@ class ChatLobby extends React.Component {
     else
       this.setState({imageUrl: this.defaultImageUrl});
   }
+  handleClose = () => {
+    this.setState({imageUrl: this.defaultImageUrl, showSelection: false});
+  }
+
+  clickSave = () => {
+    this.defaultImageUrl = this.state.imageUrl;
+    this.setState({imageUrl: this.state.imageUrl, showSelection: false});
+  }
 
   render() {
     if (this.state.isBattle) {
@@ -107,7 +115,7 @@ class ChatLobby extends React.Component {
     }
     return (
       <Grid fluid>
-        <Modal show={this.state.showSelection} onHide={() => { this.setState({imageUrl: this.defaultImageUrl, showSelection: false}) }}>
+        <Modal show={this.state.showSelection} onHide={this.handleClose}>
 
           <Modal.Header closeButton>
             <Modal.Title>Please paste your image url</Modal.Title>
@@ -128,8 +136,8 @@ class ChatLobby extends React.Component {
             </form>
           </Modal.Body>
           <Modal.Footer>
-            <Button onClick={ () => this.setState({imageUrl: this.defaultImageUrl, showSelection: false}) }> Close </Button>
-            <Button bsStyle="primary" onClick={ () => { this.defaultImageUrl = this.state.imageUrl; this.setState({showSelection: false}); } }>Save changes</Button>
+            <Button onClick={this.handleClose}> Close </Button>
+            <Button bsStyle="primary" onClick={this.clickSave} >Save changes</Button>
           </Modal.Footer>
 
         </Modal>
