@@ -1,0 +1,7 @@
+#go-board{
+  height: 500px;
+  width: 500px;
+  background-image: url('goboard.jpg');
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+}

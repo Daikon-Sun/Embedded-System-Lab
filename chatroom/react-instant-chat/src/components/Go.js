@@ -1,5 +1,4 @@
-require('../styles/App.css');
-require('../styles/Login.css');
+require('../styles/go.css')
 
 import React from 'react';
 
@@ -14,9 +13,9 @@ class Go extends React.Component {
         e[i][j]=0
       }
     }
-    this.state = { 
-      player:0, 
-      playboard: e
+    this.state = {
+      player:0,
+      playboard:e
     };
 
     this.gostep = this.gostep.bind(this)
@@ -24,31 +23,29 @@ class Go extends React.Component {
     this.updatego = this.updatego.bind(this);
   }
   
-  updatego(pos){
+  updatego(){
     
   
-  } 
+  }
   drawcanvas(){
     
   }
     
-  gostep(pos){
+  gostep(){
     //this.updatego(pos)
     //this.drawcanvas()
-    this.setState({player:(this.state.player+1)%2})
+    this.setState({player:(this.state.player+1)%2});
   }
 
   render() {
     return(
-      <div onClick={this.gostep}>
-        hihi
+      <div id='go-board' onClick={this.gostep}>
+        hihi {this.state.player}
       </div>
     );
   }
 
 }
-App.defaultProps = {
-};
 
 export default Go;
 

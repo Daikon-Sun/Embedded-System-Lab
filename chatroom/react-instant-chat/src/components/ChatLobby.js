@@ -70,6 +70,7 @@ class ChatLobby extends React.Component {
               } </div>
             </Col>
           </Row>
+          <Go />
         </Grid>
     );
   }
