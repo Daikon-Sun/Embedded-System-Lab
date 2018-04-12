@@ -42,6 +42,10 @@ socketIo.on('connection', socket => {
     socket.emit('server:returnAllUser', userNameList);
   });
 
+  socket.on('client:onestep', message => {
+    // message received from client, now broadcast it to everyone else
+    socket.emit('server:onestep', message);
+  });
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
     userNameList = userNameList.filter((v, i) => (v != `${username}`))
