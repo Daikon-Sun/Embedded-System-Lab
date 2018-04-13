@@ -31,7 +31,7 @@ class ChatLobby extends React.Component {
     this.socket = io(config.api, {query: `username=${props.username}`}).connect();
 
     this.socket.on('server:returnAllUser', usernameList => {
-      this.setState({usernameList});
+      this.setState({usernameList:usernameList});
     });
     this.socket.on('server:getInvitation', from_to => {
       console.log(from_to);
@@ -48,11 +48,11 @@ class ChatLobby extends React.Component {
     });
 
     this.socket.on('server:accept', from_to => {
-      if (from_to.to == this.props.username)
+      if (from_to.to == this.state.user_key)
         this.setState({isBattle: true});
     });
     this.socket.on('server:reject', from_to => {
-      if (from_to.to == this.props.username) {
+      if (from_to.to == this.state.user_key) {
         this.setState({showReject: true});
         this.state.opponent = null;
       }
@@ -121,17 +121,17 @@ class ChatLobby extends React.Component {
     this.setState({color, showSelectBattle: false});
     this.socket.emit(
       'client:getInvitation',
-      {from: this.props.username, to: this.state.opponent, color: 3-color}
+      {from: this.state.user_key, to: this.state.opponent, color: 3-color}
     );
 
   }
   accept = (color) => {
     this.setState({isBattle: true, showInvitation: false});
-    this.socket.emit('client:accept', {from: this.props.username, to: this.state.opponent});
+    this.socket.emit('client:accept', {from: this.state.user_key, to: this.state.opponent});
   };
   reject = (color) => {
     this.setState({opponent: null, color: 0, showInvitation: false});
-    this.socket.emit('client:reject', {from: this.props.username, to: this.state.opponent});
+    this.socket.emit('client:reject', {from: this.state.user_key, to: this.state.opponent});
   }
   closeSelectImageUrl = () => {
     this.setState({showSelectImageUrl: false});
@@ -173,7 +173,7 @@ class ChatLobby extends React.Component {
     if (this.state.color && this.state.isBattle) {
       return (
         <div>
-          <Go player={this.user_key}
+          <Go player={this.state.user_key}
               opponent={this.state.opponent}
               color={this.state.color}
               socket={this.socket}

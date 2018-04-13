@@ -7,6 +7,7 @@ import React from 'react';
 class Go extends React.Component {
   constructor(props) {
     super(props);
+    console.log(this.props);
     let ss = 19;
     let e = new Array(ss);
     for(let i=0;i<ss;i++){
@@ -176,6 +177,10 @@ class Go extends React.Component {
   }
   
   getstep = (m) => {
+    console.log("getstep1");
+    console.log(m);
+    console.log(m.player, this.state.opponent);
+    console.log(m.opponent, this.state.player);
     if((m.player != this.state.opponent) || (m.opponent != this.state.player))
       return;
     if(m.pass == 1){
@@ -186,6 +191,7 @@ class Go extends React.Component {
     }
     else
       this.setState({pass: 0});
+    console.log("getstep2");
     this.setState({board:m.board, myturn:1, ko:m.ko});
     this.drawstones();
   }
@@ -258,7 +264,7 @@ class Go extends React.Component {
           {this.screen_alert()}
         </div>
         <div id='go-title'>
-          {props.getName(this.state.player)} vs {props.getName(this.state.opponent)}
+          {this.props.getName(this.state.player)} vs {this.props.getName(this.state.opponent)}
         </div>
       </div>
     );
