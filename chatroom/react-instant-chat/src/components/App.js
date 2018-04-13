@@ -27,16 +27,11 @@ class App extends React.Component {
   render() {
 
     if (this.state.submitted) {
-      // Form was submitted, now show the main App
       return (
-        <ChatLobby username={this.state.username} />
+        <ChatLobby username={this.state.username} imageUrl={'.com'}/>
       )
-      // return (
-      //   <ChatApp username={this.state.username} />
-      // );
     }
 
-    // Initial page load, show a simple login form
     return (
       <form onSubmit={this.usernameSubmitHandler} className="username-container">
         <h1>Go Chat</h1>
