@@ -3,18 +3,15 @@ require("babel-polyfill");
 require('../styles/ChatLobby.css');
 
 import React from 'react';
-import { Grid, Row, Col, Modal, FormGroup, FormControl, HelpBlock, Button } from 'react-bootstrap';
+import { Grid, Row, Col, Modal, FormGroup, FormControl, HelpBlock,
+  Button, ButtonGroup } from 'react-bootstrap';
 import io from 'socket.io-client';
 
 var imageExists = require('image-exists');
-//import isImageUrl from 'is-image-url';
-//var imageExtensions = require('image-extensions');
-
 import config from '../config';
 import Messages from './Messages';
 import ChatInput from './ChatInput';
 import Go from './Go';
-
 
 class ChatLobby extends React.Component {
 
@@ -26,9 +23,10 @@ class ChatLobby extends React.Component {
 
     this.defaultImageUrl = 'https://thebenclark.files.wordpress.com/2014/03/facebook-default-no-profile-pic.jpg';
     this.state = {
-      usernameList: [], messages: [], isBattle: false,
-      showSelection: false, imageUrl: this.defaultImageUrl,
-      validImageUrl: 'success'
+      usernameList: [], messages: [], color: 0, isBattle: false,
+      showSelectImageUrl: false, imageUrl: this.defaultImageUrl,
+      validImageUrl: 'success', opponent: "",
+      showInvitation: false
     };
 
     // Connect to the server
@@ -37,6 +35,23 @@ class ChatLobby extends React.Component {
     // Listen for messages from the server
     this.socket.on('server:returnAllUser', usernameList => {
       this.setState({usernameList});
+    });
+    this.socket.on('server:getInvitation', from_to => {
+      console.log('client', from_to);
+      if (from_to.to == this.props.username) {
+        console.log(this.props.username, 'get invited');
+        this.setState({
+          opponent: from_to.from, showInvitation: true,
+          color: from_to.color
+        });
+      }
+    });
+
+    this.socket.on('server:accept', from_to => {
+      console.log('accept client', from_to);
+      if (from_to.to == this.props.username) {
+        this.setState({isBattle: true});
+      }
     });
 
     this.socket.emit('client:getAllUser', {});
@@ -66,9 +81,9 @@ class ChatLobby extends React.Component {
 
   clickType = (name) => {
     if (name == `${this.props.username}`)
-      this.setState({showSelection: true});
+      this.setState({showSelectImageUrl: true});
     else
-      this.setState({isBattle: true});
+      this.setState({showSelectBattle: true, opponent: name});
   }
 
   printAllUser = (v, i) => {
@@ -83,7 +98,8 @@ class ChatLobby extends React.Component {
       </Row>
     )
   }
-  handleChange = (e) => {
+
+  changeSelectImageUrl = (e) => {
     imageExists(
       e.target.value,
       (exists) => {
@@ -96,26 +112,47 @@ class ChatLobby extends React.Component {
     else
       this.setState({imageUrl: this.defaultImageUrl});
   }
-  handleClose = () => {
-    this.setState({imageUrl: this.defaultImageUrl, showSelection: false});
-  }
 
+  invite = (color) => {
+    this.setState({color, showSelectBattle: false});
+    console.log('invite', this.state.opponent, this.props.username);
+    this.socket.emit(
+      'client:getInvitation',
+      {from: this.props.username, to: this.state.opponent, color: 3-color}
+    );
+  }
+  accept = (color) => {
+    this.setState({isBattle: true});
+    this.socket.emit('client:accept', {from: this.props.username, to: this.state.opponent});
+  };
+  reject = (color) => {
+    this.setState({opponent: "", color: 0, showInvitation: false});
+  }
+  closeSelectImageUrl = () => {
+    this.setState({imageUrl: this.defaultImageUrl, showSelectImageUrl: false});
+  }
+  closeSelectBattle = () => {
+    this.setState({showSelectBattle: false, opponent: ""});
+  }
+  closeInvitation = () => {
+    this.setState({showInvitation: false, opponent: ""});
+  }
   clickSave = () => {
     this.defaultImageUrl = this.state.imageUrl;
-    this.setState({imageUrl: this.state.imageUrl, showSelection: false});
+    this.setState({imageUrl: this.state.imageUrl, showSelectImageUrl: false});
   }
 
   render() {
-    if (this.state.isBattle) {
+    if (this.state.color && this.state.isBattle) {
       return (
         <div>
-          <Go />
+          <Go player={this.props.username} opponent={this.props.opponent} color={this.state.color} socket={this.socket}/>
         </div>
       );
     }
     return (
       <Grid fluid>
-        <Modal show={this.state.showSelection} onHide={this.handleClose}>
+        <Modal show={this.state.showSelectImageUrl} onHide={this.closeSelectImageUrl}>
 
           <Modal.Header closeButton>
             <Modal.Title>Please paste your image url</Modal.Title>
@@ -128,7 +165,7 @@ class ChatLobby extends React.Component {
                   type="text"
                   defaultValue={""}
                   placeholder="Paste image url..."
-                  onChange={this.handleChange}
+                  onChange={this.changeSelectImageUrl}
                 />
                 <FormControl.Feedback />
                 <HelpBlock>Your cover photo will be changed to the image url.</HelpBlock>
@@ -136,11 +173,37 @@ class ChatLobby extends React.Component {
             </form>
           </Modal.Body>
           <Modal.Footer>
-            <Button onClick={this.handleClose}> Close </Button>
+            <Button onClick={this.closeSelectImageUrl}> Close </Button>
             <Button bsStyle="primary" onClick={this.clickSave} >Save changes</Button>
           </Modal.Footer>
 
         </Modal>
+
+        <Modal show={this.state.showSelectBattle} onHide={this.closeSelectBattle}>
+          <ButtonGroup vertical block>
+            <Button bsSize="lg" onClick={() => this.invite(1)}>
+              Play against user {this.state.opponent} as BLACK
+            </Button>
+            <Button bsSize="lg" onClick={() => this.invite(2)}>
+              Play against user {this.state.opponent} as WHITE
+            </Button>
+          </ButtonGroup>
+        </Modal>
+
+        <Modal show={this.state.showInvitation} onHide={this.closeInvitation}>
+          <Modal.Header closeButton>
+            <Modal.Title>Do you want to play againt {this.state.opponent} as {this.state.color == 1 ? "BLACK" : "WHITE"} </Modal.Title>
+          </Modal.Header>
+          <ButtonGroup vertical block>
+            <Button bsSize="lg" onClick={this.accept}>
+              Accept !
+            </Button>
+            <Button bsSize="lg" onClick={this.reject}>
+              Reject !
+            </Button>
+          </ButtonGroup>
+        </Modal>
+
         <Row>
           <Col md={10}>
             <div className="container" id="Lobby">

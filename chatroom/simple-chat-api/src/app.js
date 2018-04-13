@@ -52,6 +52,14 @@ socketIo.on('connection', socket => {
     console.log(userNameList);
     socket.broadcast.emit('server:returnAllUser', userNameList);
   });
+
+  socket.on('client:getInvitation', from_to => {
+    socket.broadcast.emit('server:getInvitation', from_to);
+  });
+  socket.on('client:accept',from_to => {
+    socket.broadcast.emit('server:accept', from_to);
+  });
+
 });
 
 export default app;
