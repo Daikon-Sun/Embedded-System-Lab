@@ -126,7 +126,7 @@ class ChatLobby extends React.Component {
 
   }
   accept = (color) => {
-    this.setState({isBattle: true});
+    this.setState({isBattle: true, showInvitation: false});
     this.socket.emit('client:accept', {from: this.props.username, to: this.state.opponent});
   };
   reject = (color) => {
@@ -152,13 +152,20 @@ class ChatLobby extends React.Component {
     this.defaultImageUrl = this.state.imageUrl;
     this.setState({imageUrl: this.state.imageUrl, showSelectImageUrl: false});
   }
+  endBattle = () => {
+    this.setState({isBattle: false, opponent: "", color: 0});
+  }
 
   render() {
     if (this.state.color && this.state.isBattle) {
       console.log(this.props);
       return (
         <div>
-          <Go player={this.props.username} opponent={this.state.opponent} color={this.state.color} socket={this.socket}/>
+          <Go player={this.props.username}
+              opponent={this.state.opponent}
+              color={this.state.color}
+              socket={this.socket}
+              endBattle={this.endBattle}/>
         </div>
       );
     }
