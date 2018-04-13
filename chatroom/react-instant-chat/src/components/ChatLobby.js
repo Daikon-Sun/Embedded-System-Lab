@@ -146,7 +146,7 @@ class ChatLobby extends React.Component {
     if (this.state.color && this.state.isBattle) {
       return (
         <div>
-          <Go player={this.props.username} opponent={this.props.opponent} color={this.state.color} socket={this.socket}/>
+          <Go player={this.props.username} opponent={this.state.opponent} color={this.state.color} socket={this.socket}/>
         </div>
       );
     }
