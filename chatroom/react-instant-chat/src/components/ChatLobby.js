@@ -20,11 +20,12 @@ class ChatLobby extends React.Component {
   constructor(props) {
 
     super(props);
-
-    this.defaultImageUrl = 'https://thebenclark.files.wordpress.com/2014/03/facebook-default-no-profile-pic.jpg';
+    this.lastValidImageUrl = null;
     this.state = {
-      usernameList: [], messages: [], color: 0, isBattle: false,
-      showSelectImageUrl: false, imageUrl: this.defaultImageUrl,
+      usernameList: [],
+      user_key: null,
+      messages: [], color: 0, isBattle: false,
+      showSelectImageUrl: false,
       validImageUrl: 'success', opponent: "",
       showInvitation: false, showNoMoreInvite: false
     };
@@ -34,6 +35,7 @@ class ChatLobby extends React.Component {
 
     // Listen for messages from the server
     this.socket.on('server:returnAllUser', usernameList => {
+      console.log("returnAllUser!!", usernameList);
       this.setState({usernameList});
     });
     this.socket.on('server:getInvitation', from_to => {
@@ -43,6 +45,9 @@ class ChatLobby extends React.Component {
           color: from_to.color
         });
       }
+    });
+    this.socket.on('server:first_return', m =>{
+      this.setState({usernameList:m.userNameList, user_key:m.user_key});
     });
 
     this.socket.on('server:accept', from_to => {
@@ -81,8 +86,9 @@ class ChatLobby extends React.Component {
     this.setState({ messages });
   }
 
-  clickType = (name) => {
-    if (name == `${this.props.username}`)
+  clickType = (key) => {
+    console.log(key);
+    if (key == this.state.user_key)
       this.setState({showSelectImageUrl: true});
     else if (this.state.opponent == "")
       this.setState({showSelectBattle: true, opponent: name});
@@ -92,29 +98,40 @@ class ChatLobby extends React.Component {
 
   printAllUser = (v, i) => {
     return (
-      <Row key={i} className="signature" onClick={() => this.clickType(v)}>
+      <Row key={i} className="signature" onClick={() => this.clickType(v.user_key)}>
         <Col md={3} className="personal-figure">
-          <img src={this.state.imageUrl} width='39.8em' height='39.8em'/>
+          <img src={v.url} width='39.8em' height='39.8em'/>
         </Col>
         <Col md={9} className="personal-name">
-          {v}
+          {v.name}
         </Col>
       </Row>
     )
   }
 
   changeSelectImageUrl = (e) => {
+    e.persist();
     imageExists(
       e.target.value,
       (exists) => {
-        if (exists) this.setState({validImageUrl: 'success'});
-        else this.setState({validImageUrl: 'error'});
+        if (exists) {
+          this.lastValidImageUrl = e.target.value;
+          this.setState({validImageUrl: "success"});
+        }
+        else
+          this.setState({validImageUrl: "warning"});
       }
     );
-    if (this.state.validImageUrl == 'success')
-      this.setState({imageUrl: e.target.value});
-    else
-      this.setState({imageUrl: this.defaultImageUrl});
+    //if (this.state.validImageUrl == "success") {
+    //  for(let i = 0 ; i < this.state.usernameList.length; i++){
+    //    if(this.state.usernameList[i].key == this.state.key){
+    //      this.state.usernameList[i].url = e.target.value;
+    //      this.setState({usernameList:this.state.usernameList});
+    //      this.socket.emit('updateuserinfo', this.state.usernameList);
+    //      break;
+    //    }
+    //  }
+    //}
   }
 
   invite = (color) => {
@@ -134,7 +151,7 @@ class ChatLobby extends React.Component {
     this.socket.emit('client:reject', {from: this.props.username, to: this.state.opponent});
   }
   closeSelectImageUrl = () => {
-    this.setState({imageUrl: this.defaultImageUrl, showSelectImageUrl: false});
+    this.setState({showSelectImageUrl: false});
   }
   closeSelectBattle = () => {
     this.setState({showSelectBattle: false, opponent: ""});
@@ -149,8 +166,16 @@ class ChatLobby extends React.Component {
     this.setState({showNoMoreInvite: false});
   }
   clickSave = () => {
-    this.defaultImageUrl = this.state.imageUrl;
-    this.setState({imageUrl: this.state.imageUrl, showSelectImageUrl: false});
+    if (this.lastValidImageUrl){
+      for(let i = 0 ; i < this.state.usernameList.length; i++){
+        if(this.state.usernameList[i].user_key == this.state.user_key){
+          this.state.usernameList[i].url = this.lastValidImageUrl;
+          this.setState({usernameList:this.state.usernameList, showSelectImageUrl:false});
+          this.socket.emit('updateuserinfo', this.state.usernameList);
+          break;
+        }
+      }
+    }
   }
   endBattle = () => {
     this.setState({isBattle: false, opponent: "", color: 0});

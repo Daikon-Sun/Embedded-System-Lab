@@ -62,6 +62,34 @@
   border-color: red;
 }
 
+.go-main-exit:hover{
+  cursor: pointer;
+}
+
 #pass-button{
   margin-top: 15px;
+}
+
+#pass-button:hover{
+  cursor: pointer;
+}
+
+.screen-alert{
+  margin-top: 15px;
+  text-align:center;
+  font-size: 16px;
+  color: red;
+}
+
+
+#go-title{
+  position: absolute;
+  top: 530px;
+  left:0px;
+  width: 700px;
+  text-align: center;
+  color: #111;
+  font-size: 26px;
+  
+  
 }

@@ -23,33 +23,43 @@ app.get('/', (req, res) => {
 server.listen(process.env.PORT || config.port);
 console.log(`Started on port ${config.port}`);
 
-var userNameList = []
-
+//var userNameList = []
+var userNameList = [];
+var user_key = 0;
 // Setup socket.io
 socketIo.on('connection', socket => {
+  let defaultImageUrl = 'https://thebenclark.files.wordpress.com/2014/03/facebook-default-no-profile-pic.jpg';
   const username = socket.handshake.query.username;
-  userNameList.push(`${username}`);
+  const u_key = user_key;
+  //console.log(socket.handshake.query);
+  //console.log(u_key);
+  let newuser = {name: `${username}`, url:defaultImageUrl, user_key: user_key};
+  user_key++;
+  userNameList.push(newuser);
   console.log(`${username} connected`);
   socket.broadcast.emit('server:returnAllUser', userNameList);
+  socket.emit('server:first_return', {userNameList: userNameList, user_key:newuser.user_key});
   socket.on('client:message', data => {
     console.log(`${data.username}: ${data.message}`);
-    // message received from client, now broadcast it to everyone else
     socket.broadcast.emit('server:message', data);
   });
 
   socket.on('client:getAllUser', () => {
-    // message received from client, now broadcast it to everyone else
     socket.emit('server:returnAllUser', userNameList);
+  });
+  socket.on('updateuserinfo', userinfo => {
+    userNameList = userinfo;
+    socket.broadcast.emit('server:returnAllUser', userNameList);
   });
 
   socket.on('client:onestep', message => {
-    // message received from client, now broadcast it to everyone else
     socket.broadcast.emit('server:onestep', message);
   });
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
-    userNameList = userNameList.filter((v, i) => (v != `${username}`))
-    console.log(userNameList);
+    console.log(socket.handshake.query);
+    console.log("u_key", u_key);
+    userNameList = userNameList.filter((v, i) => (v.user_key != u_key))
     socket.broadcast.emit('server:returnAllUser', userNameList);
   });
 
