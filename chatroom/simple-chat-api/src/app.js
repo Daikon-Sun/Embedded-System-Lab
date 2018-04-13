@@ -39,6 +39,12 @@ socketIo.on('connection', socket => {
   console.log(`${username} connected`);
   socket.broadcast.emit('server:returnAllUser', userNameList);
   socket.emit('server:first_return', {userNameList: userNameList, user_key:newuser.user_key});
+
+  const loginMessage = {
+    message: `user ${username} has logged in!`,
+    fromServer: true
+  };
+  socket.broadcast.emit('server:loginUser', loginMessage);
   socket.on('client:message', data => {
     console.log(`${data.username}: ${data.message}`);
     socket.broadcast.emit('server:message', data);
@@ -58,6 +64,12 @@ socketIo.on('connection', socket => {
   socket.on('disconnect', () => {
     userNameList = userNameList.filter((v, i) => (v.user_key != u_key))
     socket.broadcast.emit('server:returnAllUser', userNameList);
+    console.log(`${username} disconnected`);
+    const logoutMessage = {
+      message: `user ${username} has logged out!`,
+      fromServer: true
+    };
+    socket.broadcast.emit('server:logoutUser', logoutMessage);
   });
 
   socket.on('client:getInvitation', from_to => {
@@ -69,7 +81,6 @@ socketIo.on('connection', socket => {
   socket.on('client:reject', from_to => {
     socket.broadcast.emit('server:reject', from_to);
   });
-
 
 });
 export default app;

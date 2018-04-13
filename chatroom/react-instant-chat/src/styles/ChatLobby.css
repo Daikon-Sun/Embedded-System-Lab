@@ -41,6 +41,15 @@ h3 {
   display: none;
 }
 
+.message.from-server {
+  display: flex;
+}
+
+.message.from-server .message-body {
+  margin: 0 auto;
+  background: none;
+}
+
 .message.from-me {
   display: flex;
   justify-content: flex-end;

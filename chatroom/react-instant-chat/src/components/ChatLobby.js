@@ -1,5 +1,3 @@
-require("babel-core/register");
-require("babel-polyfill");
 require('../styles/ChatLobby.css');
 
 import React from 'react';
@@ -33,7 +31,6 @@ class ChatLobby extends React.Component {
     this.socket = io(config.api, {query: `username=${props.username}`}).connect();
 
     this.socket.on('server:returnAllUser', usernameList => {
-      console.log("returnAllUser!!", usernameList);
       this.setState({usernameList});
     });
     this.socket.on('server:getInvitation', from_to => {
@@ -61,11 +58,9 @@ class ChatLobby extends React.Component {
       }
     });
 
-    this.socket.emit('client:getAllUser', {});
-
-    this.socket.on('server:message', message => {
-      this.addMessage(message);
-    });
+    this.socket.on('server:message', message => { this.addMessage(message); });
+    this.socket.on('server:loginUser', message => { this.addMessage(message); });
+    this.socket.on('server:logoutUser', message => { this.addMessage(message); });
   }
 
   sendHandler = (message) => {
@@ -176,7 +171,6 @@ class ChatLobby extends React.Component {
 
   render() {
     if (this.state.color && this.state.isBattle) {
-      console.log(this.props);
       return (
         <div>
           <Go player={this.user_key}
@@ -249,7 +243,7 @@ class ChatLobby extends React.Component {
             </Modal.Title>
           </Modal.Header>
           <Modal.Body>
-            You are rejected by {this.state.opponent} !
+            You are rejected by {this.getName(this.state.opponent)} !
           </Modal.Body>
         </Modal>
 
