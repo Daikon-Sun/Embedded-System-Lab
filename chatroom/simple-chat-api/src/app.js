@@ -44,7 +44,7 @@ socketIo.on('connection', socket => {
 
   socket.on('client:onestep', message => {
     // message received from client, now broadcast it to everyone else
-    socket.emit('server:onestep', message);
+    socket.broadcast.emit('server:onestep', message);
   });
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
@@ -58,6 +58,9 @@ socketIo.on('connection', socket => {
   });
   socket.on('client:accept',from_to => {
     socket.broadcast.emit('server:accept', from_to);
+  });
+  socket.on('client:reject', from_to => {
+    socket.broadcast.emit('server:reject', from_to);
   });
 
 });
