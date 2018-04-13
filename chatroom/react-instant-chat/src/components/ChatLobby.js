@@ -26,7 +26,7 @@ class ChatLobby extends React.Component {
       usernameList: [], messages: [], color: 0, isBattle: false,
       showSelectImageUrl: false, imageUrl: this.defaultImageUrl,
       validImageUrl: 'success', opponent: "",
-      showInvitation: false
+      showInvitation: false, showNoMoreInvite: false
     };
 
     // Connect to the server
@@ -37,9 +37,7 @@ class ChatLobby extends React.Component {
       this.setState({usernameList});
     });
     this.socket.on('server:getInvitation', from_to => {
-      console.log('client', from_to);
       if (from_to.to == this.props.username) {
-        console.log(this.props.username, 'get invited');
         this.setState({
           opponent: from_to.from, showInvitation: true,
           color: from_to.color
@@ -48,9 +46,13 @@ class ChatLobby extends React.Component {
     });
 
     this.socket.on('server:accept', from_to => {
-      console.log('accept client', from_to);
-      if (from_to.to == this.props.username) {
+      if (from_to.to == this.props.username)
         this.setState({isBattle: true});
+    });
+    this.socket.on('server:reject', from_to => {
+      if (from_to.to == this.props.username) {
+        this.setState({showReject: true});
+        this.state.opponent = "";
       }
     });
 
@@ -82,8 +84,10 @@ class ChatLobby extends React.Component {
   clickType = (name) => {
     if (name == `${this.props.username}`)
       this.setState({showSelectImageUrl: true});
-    else
+    else if (this.state.opponent == "")
       this.setState({showSelectBattle: true, opponent: name});
+    else
+      this.setState({showNoMoreInvite: true});
   }
 
   printAllUser = (v, i) => {
@@ -115,11 +119,11 @@ class ChatLobby extends React.Component {
 
   invite = (color) => {
     this.setState({color, showSelectBattle: false});
-    console.log('invite', this.state.opponent, this.props.username);
     this.socket.emit(
       'client:getInvitation',
       {from: this.props.username, to: this.state.opponent, color: 3-color}
     );
+
   }
   accept = (color) => {
     this.setState({isBattle: true});
@@ -127,6 +131,7 @@ class ChatLobby extends React.Component {
   };
   reject = (color) => {
     this.setState({opponent: "", color: 0, showInvitation: false});
+    this.socket.emit('client:reject', {from: this.props.username, to: this.state.opponent});
   }
   closeSelectImageUrl = () => {
     this.setState({imageUrl: this.defaultImageUrl, showSelectImageUrl: false});
@@ -137,6 +142,12 @@ class ChatLobby extends React.Component {
   closeInvitation = () => {
     this.setState({showInvitation: false, opponent: ""});
   }
+  closeReject = () => {
+    this.setState({showReject: false});
+  }
+  closeNoMoreInvite = () => {
+    this.setState({showNoMoreInvite: false});
+  }
   clickSave = () => {
     this.defaultImageUrl = this.state.imageUrl;
     this.setState({imageUrl: this.state.imageUrl, showSelectImageUrl: false});
@@ -144,9 +155,10 @@ class ChatLobby extends React.Component {
 
   render() {
     if (this.state.color && this.state.isBattle) {
+      console.log(this.props);
       return (
         <div>
-          <Go player={this.props.username} opponent={this.props.opponent} color={this.state.color} socket={this.socket}/>
+          <Go player={this.props.username} opponent={this.state.opponent} color={this.state.color} socket={this.socket}/>
         </div>
       );
     }
@@ -202,6 +214,25 @@ class ChatLobby extends React.Component {
               Reject !
             </Button>
           </ButtonGroup>
+        </Modal>
+
+        <Modal show={this.state.showReject} onHide={this.closeReject}>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              Rejection!
+            </Modal.Title>
+          </Modal.Header>
+          <Modal.Body>
+            You are rejected by {this.state.opponent} !
+          </Modal.Body>
+        </Modal>
+
+        <Modal show={this.state.showNoMoreInvite} onHide={this.closeNoMoreInvite}>
+          <Modal.Header closeButton>
+            <Modal.Title>
+              You cannot invite more than one player!
+            </Modal.Title>
+          </Modal.Header>
         </Modal>
 
         <Row>

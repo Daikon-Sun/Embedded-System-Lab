@@ -59,6 +59,9 @@ socketIo.on('connection', socket => {
   socket.on('client:accept',from_to => {
     socket.broadcast.emit('server:accept', from_to);
   });
+  socket.on('client:reject', from_to => {
+    socket.broadcast.emit('server:reject', from_to);
+  });
 
 });
 
