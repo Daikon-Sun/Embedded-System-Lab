@@ -56,9 +56,6 @@ socketIo.on('connection', socket => {
     socket.broadcast.emit('server:onestep', message);
   });
   socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-    console.log(socket.handshake.query);
-    console.log("u_key", u_key);
     userNameList = userNameList.filter((v, i) => (v.user_key != u_key))
     socket.broadcast.emit('server:returnAllUser', userNameList);
   });
@@ -73,6 +70,6 @@ socketIo.on('connection', socket => {
     socket.broadcast.emit('server:reject', from_to);
   });
 
-});
 
+});
 export default app;
