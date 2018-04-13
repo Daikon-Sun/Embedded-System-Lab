@@ -264,7 +264,7 @@ class ChatLobby extends React.Component {
         <Row>
           <Col md={10}>
             <div className="container" id="Lobby">
-              <h3>Lobby</h3>
+              <h3>Go Chat Lobby</h3>
               <Messages messages={this.state.messages} />
               <ChatInput onSend={this.sendHandler} />
             </div>
