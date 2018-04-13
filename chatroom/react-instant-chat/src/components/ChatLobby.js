@@ -24,7 +24,7 @@ class ChatLobby extends React.Component {
       user_key: null,
       messages: [], color: 0, isBattle: false,
       showSelectImageUrl: false,
-      validImageUrl: 'success', opponent: null,
+      validImageUrl: null, opponent: null,
       showInvitation: false, showNoMoreInvite: false
     };
 
@@ -81,9 +81,10 @@ class ChatLobby extends React.Component {
 
   clickType = (key) => {
     console.log(key);
-    if (key == this.state.user_key)
+    if (key == this.state.user_key) {
+      this.state.validImageUrl = null;
       this.setState({showSelectImageUrl: true});
-    else if (this.state.opponent == null)
+    } else if (this.state.opponent == null)
       this.setState({showSelectBattle: true, opponent: key});
     else
       this.setState({showNoMoreInvite: true});
@@ -173,7 +174,7 @@ class ChatLobby extends React.Component {
     if (this.state.color && this.state.isBattle) {
       return (
         <div>
-          <Go player={this.user_key}
+          <Go player={this.state.user_key}
               opponent={this.state.opponent}
               color={this.state.color}
               socket={this.socket}
