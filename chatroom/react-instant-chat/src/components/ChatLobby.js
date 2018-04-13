@@ -26,20 +26,20 @@ class ChatLobby extends React.Component {
       user_key: null,
       messages: [], color: 0, isBattle: false,
       showSelectImageUrl: false,
-      validImageUrl: 'success', opponent: "",
+      validImageUrl: 'success', opponent: null,
       showInvitation: false, showNoMoreInvite: false
     };
 
-    // Connect to the server
     this.socket = io(config.api, {query: `username=${props.username}`}).connect();
 
-    // Listen for messages from the server
     this.socket.on('server:returnAllUser', usernameList => {
       console.log("returnAllUser!!", usernameList);
       this.setState({usernameList});
     });
     this.socket.on('server:getInvitation', from_to => {
-      if (from_to.to == this.props.username) {
+      console.log(from_to);
+      console.log(this.props.username);
+      if (from_to.to == this.state.user_key) {
         this.setState({
           opponent: from_to.from, showInvitation: true,
           color: from_to.color
@@ -57,7 +57,7 @@ class ChatLobby extends React.Component {
     this.socket.on('server:reject', from_to => {
       if (from_to.to == this.props.username) {
         this.setState({showReject: true});
-        this.state.opponent = "";
+        this.state.opponent = null;
       }
     });
 
@@ -73,14 +73,12 @@ class ChatLobby extends React.Component {
       username: this.props.username,
       message
     };
-    // Emit the message to the server
     this.socket.emit('client:message', messageObject);
     messageObject.fromMe = true;
     this.addMessage(messageObject);
   }
 
   addMessage = (message) => {
-    // Append the message to the component state
     const messages = this.state.messages;
     messages.push(message);
     this.setState({ messages });
@@ -90,8 +88,8 @@ class ChatLobby extends React.Component {
     console.log(key);
     if (key == this.state.user_key)
       this.setState({showSelectImageUrl: true});
-    else if (this.state.opponent == "")
-      this.setState({showSelectBattle: true, opponent: name});
+    else if (this.state.opponent == null)
+      this.setState({showSelectBattle: true, opponent: key});
     else
       this.setState({showNoMoreInvite: true});
   }
@@ -122,16 +120,6 @@ class ChatLobby extends React.Component {
           this.setState({validImageUrl: "warning"});
       }
     );
-    //if (this.state.validImageUrl == "success") {
-    //  for(let i = 0 ; i < this.state.usernameList.length; i++){
-    //    if(this.state.usernameList[i].key == this.state.key){
-    //      this.state.usernameList[i].url = e.target.value;
-    //      this.setState({usernameList:this.state.usernameList});
-    //      this.socket.emit('updateuserinfo', this.state.usernameList);
-    //      break;
-    //    }
-    //  }
-    //}
   }
 
   invite = (color) => {
@@ -147,17 +135,17 @@ class ChatLobby extends React.Component {
     this.socket.emit('client:accept', {from: this.props.username, to: this.state.opponent});
   };
   reject = (color) => {
-    this.setState({opponent: "", color: 0, showInvitation: false});
+    this.setState({opponent: null, color: 0, showInvitation: false});
     this.socket.emit('client:reject', {from: this.props.username, to: this.state.opponent});
   }
   closeSelectImageUrl = () => {
     this.setState({showSelectImageUrl: false});
   }
   closeSelectBattle = () => {
-    this.setState({showSelectBattle: false, opponent: ""});
+    this.setState({showSelectBattle: false, opponent: null});
   }
   closeInvitation = () => {
-    this.setState({showInvitation: false, opponent: ""});
+    this.setState({showInvitation: false, opponent: null});
   }
   closeReject = () => {
     this.setState({showReject: false});
@@ -178,7 +166,12 @@ class ChatLobby extends React.Component {
     }
   }
   endBattle = () => {
-    this.setState({isBattle: false, opponent: "", color: 0});
+    this.setState({isBattle: false, opponent: null, color: 0});
+  }
+  getName = (key) => {
+    for (let i = 0; i < this.state.usernameList.length; ++i)
+      if (this.state.usernameList[i].user_key == key)
+        return this.state.usernameList[i].name;
   }
 
   render() {
@@ -186,10 +179,11 @@ class ChatLobby extends React.Component {
       console.log(this.props);
       return (
         <div>
-          <Go player={this.props.username}
+          <Go player={this.user_key}
               opponent={this.state.opponent}
               color={this.state.color}
               socket={this.socket}
+              getName={this.getName}
               endBattle={this.endBattle}/>
         </div>
       );
@@ -209,7 +203,7 @@ class ChatLobby extends React.Component {
                   type="text"
                   defaultValue={""}
                   placeholder="Paste image url..."
-                  onChange={this.changeSelectImageUrl}
+                  onChange={this.changeSelectImageUrl} autoFocus
                 />
                 <FormControl.Feedback />
                 <HelpBlock>Your cover photo will be changed to the image url.</HelpBlock>
@@ -226,10 +220,10 @@ class ChatLobby extends React.Component {
         <Modal show={this.state.showSelectBattle} onHide={this.closeSelectBattle}>
           <ButtonGroup vertical block>
             <Button bsSize="lg" onClick={() => this.invite(1)}>
-              Play against user {this.state.opponent} as BLACK
+              Play against user {this.getName(this.state.opponent)} as BLACK
             </Button>
             <Button bsSize="lg" onClick={() => this.invite(2)}>
-              Play against user {this.state.opponent} as WHITE
+              Play against user {this.getName(this.state.opponent)} as WHITE
             </Button>
           </ButtonGroup>
         </Modal>

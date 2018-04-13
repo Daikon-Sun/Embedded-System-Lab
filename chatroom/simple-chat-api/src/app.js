@@ -69,6 +69,6 @@ socketIo.on('connection', socket => {
     socket.broadcast.emit('server:reject', from_to);
   });
 
-});
 
+});
 export default app;
