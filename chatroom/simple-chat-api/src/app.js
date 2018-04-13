@@ -31,8 +31,6 @@ socketIo.on('connection', socket => {
   let defaultImageUrl = 'https://thebenclark.files.wordpress.com/2014/03/facebook-default-no-profile-pic.jpg';
   const username = socket.handshake.query.username;
   const u_key = user_key;
-  //console.log(socket.handshake.query);
-  //console.log(u_key);
   let newuser = {name: `${username}`, url:defaultImageUrl, user_key: user_key};
   user_key++;
   userNameList.push(newuser);
@@ -56,10 +54,8 @@ socketIo.on('connection', socket => {
     socket.broadcast.emit('server:onestep', message);
   });
   socket.on('disconnect', () => {
-    console.log(`${username} disconnected`);
-    console.log(socket.handshake.query);
-    console.log("u_key", u_key);
     userNameList = userNameList.filter((v, i) => (v.user_key != u_key))
+    console.log(`${username} disconnected`);
     socket.broadcast.emit('server:returnAllUser', userNameList);
   });
 

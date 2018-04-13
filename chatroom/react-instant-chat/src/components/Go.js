@@ -26,7 +26,8 @@ class Go extends React.Component {
       myturn:myturn,
       board:e,
       ko:[],
-      pass:0
+      pass:0,
+      s_alert:''
     };
 
     this.props.socket.on('server:onestep', message => {this.getstep(message)})
@@ -100,7 +101,7 @@ class Go extends React.Component {
     let b = this.state.board;
     // check empty
     if(b[x][y]!= 0){
-      console.log('not empty');
+      this.setState({s_alert:'Invalid'});
       return {update:false, ko_h:[]};
     }
     b[x][y] = this.state.color;
@@ -143,7 +144,7 @@ class Go extends React.Component {
     if(eaten.length > 0){
       if(eaten.length == 1){
         if((this.state.ko.length==1) && (eaten[0].x == this.state.ko[0].x && eaten[0].y == this.state.ko[0].y)){
-          console.log("ko!!");
+          this.setState({s_alert:"KO!!"});
           b[x][y] = 0;
           return {update:false, ko_h:[]};
         }
@@ -152,16 +153,15 @@ class Go extends React.Component {
       for(let i = 0; i < eaten.length; i++)
         b[eaten[i].x][eaten[i].y] = 0;
     }
-    else{// check unavailable position
+    else{// check invalid position
       let {eat, area, border} = this.eat({x:x, y:y}, b);
       if(eat==true){
-        console.log('Unavailable position!');
+        this.setState({s_alert:'Invalid position!'});
         b[x][y] = 0;
         return {update:false, ko_h:[]};
       }
       ko_h = [];
     }
-    console.log("ko_h", ko_h);
     this.setState({board:b})
     if(this.state.test){
         this.setState({ko:ko_h});
@@ -176,10 +176,8 @@ class Go extends React.Component {
   }
   
   getstep = (m) => {
-    console.log("getstep", m);
     if((m.player != this.state.opponent) || (m.opponent != this.state.player))
       return;
-    console.log(m.pass);
     if(m.pass == 1){
       this.setState({pass: 1});
     }  
@@ -193,25 +191,24 @@ class Go extends React.Component {
   }
   gostep = (e) => {
     if(this.state.pass >= 2){
-      console.log('Game end');
+      this.setState({s_alert:'GAME END'});
       return;
     }
     if(this.state.myturn==0){
-      console.log('Not your turn!');
+      this.setState({s_alert:'Not your turn!'});
       return;
     }
     let ID = e.target.id;
     let y = ID % 19;
     let x = (ID - y) / 19;
     let s = this.updatego({x,y});
-    console.log("s.ko_h:", s.ko_h);
     if(!s.update)
       return;
     if(this.state.test){
       this.setState({color:this.state.color%2+1});
     }
     else{
-      this.setState({myturn:0});
+      this.setState({myturn:0, s_alert:''});
       this.props.socket.emit('client:onestep', {player: this.state.player, opponent: this.state.opponent, board:this.state.board, ko:s.ko_h, pass:0});
     }
     this.drawstones();
@@ -219,7 +216,7 @@ class Go extends React.Component {
   
   turn = () => {
     if(this.state.pass >= 2){
-      return (<div className={'go-main-turn'} onClick={this.props.endBattle}> END GAME </div>);
+      return (<div className={'go-main-turn go-main-exit'} onClick={this.props.endBattle}> EXIT </div>);
     }
     else if(this.state.myturn == 1 && this.state.pass == 1){
       return (<div className={'go-main-turn'}> OPPONENTS PASS </div>);
@@ -231,16 +228,21 @@ class Go extends React.Component {
   }
   
   pass_click = () => {
-    console.log("pass_clicked");
     if(this.state.myturn == 0){
-      console.log('Not your turn');
+      this.setState({s_alert:'Not your turn!'});
       return;
     }
     let k = this.state.pass;
     this.props.socket.emit('client:onestep', {player: this.state.player, opponent: this.state.opponent, board:this.state.board, ko:[], pass: this.state.pass+1})
-    console.log("pass now:", k+1);
+    if(k+1 >= 2)
+      this.setState({s_alert:'GAME END'});
+    else
+      this.setState({s_alert:''})
     this.setState({pass:k+1, myturn:0});
   }
+  screen_alert = () => {
+    return (<div className={'screen-alert'}>{this.state.s_alert}</div>);
+  } 
 
   render() {
     return(
@@ -253,6 +255,10 @@ class Go extends React.Component {
         <div id='go-screen'>
           {this.turn()}
           <div id='pass-button' className={'go-main-turn'} onClick={this.pass_click}>PASS</div>
+          {this.screen_alert()}
+        </div>
+        <div id='go-title'>
+          {props.getName(this.state.player)} vs {props.getName(this.state.opponent)}
         </div>
       </div>
     );
