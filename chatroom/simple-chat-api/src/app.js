@@ -44,7 +44,7 @@ socketIo.on('connection', socket => {
 
   socket.on('client:onestep', message => {
     // message received from client, now broadcast it to everyone else
-    socket.emit('server:onestep', message);
+    socket.broadcast.emit('server:onestep', message);
   });
   socket.on('disconnect', () => {
     console.log(`${username} disconnected`);
