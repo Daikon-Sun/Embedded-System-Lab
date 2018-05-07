@@ -13,7 +13,7 @@ var resetThres = rate / 8;
 var range = accel.availableScaleRanges()[2];
 accel.setScaleRange(range); 
 var freezeRange = 0.35;
-var moveRange = 0.67;
+var moveRange = 0.65;
 
 var prvX = [], prvZ = [];
 
@@ -78,6 +78,7 @@ accel.on('ready', function () {
         }
         else if (numPeak <= -2) {
           music.write('b');
+          music.write('b');
           console.log('previous song');
         }
         prvX.length = 0;
@@ -105,12 +106,17 @@ accel.on('error', function(err){
   console.log('Error:', err);
 });
 
+mp3_list = []
+for (var i = 0; i < 3; ++i)
+  mp3_list.push('mnt/sda/music' + String(i) + '.mp3')
+madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
+
 rfid.on('ready', function (version) {
   console.log('Ready to read RFID card');
 
   rfid.on('data', function(card) {
     if (music == null) {
-      music = pty.spawn('madplay', ['/mnt/sda/music.mp3', '-a', -20]);
+      music = pty.spawn('madplay', madplay_opt);
       console.log('start playing music!');
     } else {
       console.log('stop playing music!');
