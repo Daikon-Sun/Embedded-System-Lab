@@ -5,15 +5,99 @@ var rfid = rfidlib.use(tessel.port.A);
 var pty = require('node-pty');
 var music = null;
 
+// [ 800, 400, 200, 100, 50, 12.5, 6.25, 1.56 ] Hz
+var rate = accel.availableOutputRates()[0];
+accel.setOutputRate(rate);
+var resetThres = rate / 8;
+// [ 2, 4, 8 ] Gs
+var range = accel.availableScaleRanges()[2];
+accel.setScaleRange(range); 
+var freezeRange = 0.35;
+var moveRange = 0.67;
+
+var prvX = [], prvZ = [];
+
+function needReset(prv) {
+  if (prv.length < resetThres)
+    return false;
+  for (var i = prv.length - 1; i >= prv.length - resetThres; --i) {
+    if (Math.abs(prv[i]) > freezeRange)
+      return false;
+  }
+  return true;
+}
+
+function countPeak(prv) {
+  // if (prv.length <= resetThres * 2)
+  //   return 0;
+  var st = [];
+  for (var i = 0; i < prv.length; ++i) {
+    if (prv[i] > moveRange)
+      st.push(1);
+    else if (prv[i] < -moveRange)
+      st.push(-1);
+  }
+  if (st.length == 0)
+    return 0;
+  var cur = st[0], cnt = 1;
+  for (var i = 1; i < st.length; ++i) {
+    if (st[i] != cur) {
+      ++cnt;
+      cur = st[i];
+    }
+  }
+  return Math.floor((cnt - 1) / 2) * st[0];
+}
+
 // Initialize the accelerometer.
 accel.on('ready', function () {
   // Stream accelerometer data
   accel.on('data', function (xyz) {
-    // console.log(
-    //   'x:', xyz[0].toFixed(2),
-    //   'y:', xyz[1].toFixed(2),
-    //   'z:', xyz[2].toFixed(2)
-    // );
+    if (music != null) {
+      x = xyz[0], z = xyz[2];
+      if (Math.abs(x) > moveRange || prvX.length != 0)
+        prvX.push(x);
+      if (Math.abs(z-1) > moveRange || prvZ.length != 0)
+        prvZ.push(z-1);
+
+      if (needReset(prvX)) {
+        var numPeak = countPeak(prvX);
+        if (numPeak >= 2) {
+          music.write('f');
+          console.log('next song');
+        }
+        else if (numPeak == 1) {
+          for (var j = 0; j < 4; ++j)
+            music.write('+');
+          console.log('volume up');
+        }
+        else if (numPeak == -1) {
+          for (var j = 0; j < 4; ++j)
+            music.write('-');
+          console.log('volume down');
+        }
+        else if (numPeak <= -2) {
+          music.write('b');
+          console.log('previous song');
+        }
+        prvX.length = 0;
+      }
+
+      if (needReset(prvZ)) {
+        var numPeak = Math.abs(countPeak(prvZ));
+        if (numPeak >= 2) {
+          music.write('p');
+          console.log('pause/resume music');
+        }
+        prvZ.length = 0;
+      }
+
+    } else {
+      if (prvX.length != 0)
+        prvX.length = 0;
+      if (prvZ.length != 0)
+        prvZ.length = 0;
+    }
   });
 });
 
@@ -26,7 +110,7 @@ rfid.on('ready', function (version) {
 
   rfid.on('data', function(card) {
     if (music == null) {
-      music = pty.spawn('madplay', ['/mnt/sda/music.mp3', '-a', -24]);
+      music = pty.spawn('madplay', ['/mnt/sda/music.mp3', '-a', -20]);
       console.log('start playing music!');
     } else {
       console.log('stop playing music!');
