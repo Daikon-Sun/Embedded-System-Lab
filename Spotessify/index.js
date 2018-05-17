@@ -108,7 +108,7 @@ accel.on('error', function(err){
 
 mp3_list = []
 for (var i = 0; i < 3; ++i)
-  mp3_list.push('mnt/sda/music' + String(i) + '.mp3')
+  mp3_list.push('/mnt/sda/music' + String(i) + '.mp3')
 madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
 
 rfid.on('ready', function (version) {
