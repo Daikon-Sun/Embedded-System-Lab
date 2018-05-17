@@ -1,10 +1,14 @@
-var tessel = require('tessel');
-var accel = require('accel-mma84').use(tessel.port.B);
-var rfidlib = require('rfid-pn532');
+const tessel = require('tessel');
+const accel = require('accel-mma84').use(tessel.port.B);
+const rfidlib = require('rfid-pn532');
+const request = require("request");
+const cheerio = require("cheerio");
+const ytdl = require("ytdl-core");
+const Downloader = require("./downloader");
 var rfid = rfidlib.use(tessel.port.A);
 var pty = require('node-pty');
 var music = null;
-
+var mp3_list = [];
 // [ 800, 400, 200, 100, 50, 12.5, 6.25, 1.56 ] Hz
 var rate = accel.availableOutputRates()[0];
 accel.setOutputRate(rate);
@@ -16,6 +20,16 @@ var freezeRange = 0.35;
 var moveRange = 0.65;
 
 var prvX = [], prvZ = [];
+var dl = new Downloader();
+const playlist = [
+  "PL6hLX4jbv8SaJrZbyWi0BaMn27vOgSTIo",
+  "PL6hLX4jbv8Sa_LCpyiPbiY_H_9X_Ac-MG"
+];
+const list_prefix = 'https://www.youtube.com/playlist?list=';
+var listnum = playlist.length;
+var currentlist = 0;
+var music_dir = '/mnt/sda/music';
+var madplay_opt
 
 function needReset(prv) {
   if (prv.length < resetThres)
@@ -26,6 +40,37 @@ function needReset(prv) {
   }
   return true;
 }
+
+function downloadlist(listurl, dl){
+request({
+  url: listurl,
+  method: "GET"
+},function(e, r, b){
+  if(e || !b){return;}
+  var $ = cheerio.load(b);
+  var hrefs=[];
+  $('.pl-video.yt-uix-tile a.pl-video-title-link.yt-uix-tile-link').each(function(i, element){
+    var a = $(this);
+    hrefs.push($(this).attr('href').split("&")[0].split("=")[1]);
+  })
+  //console.log(hrefs);
+  let count = hrefs.length;
+  for(var i = 0; i < hrefs.length; i++){
+    dl.getMP3({videoId: hrefs[i], name: ("music_"+i.toString()+".mp3")}, function(err,res){
+      console.log("getMP3");
+      if(err)
+        throw err;
+      else{
+        let name = res.file.toString().split("/");
+        console.log("Song was downloaded: " + res.file);
+        count--;  
+      }
+    });
+  }
+  while(count !=0){}
+  console.log("Finish all download!");
+  return hrefs.length;
+})}
 
 function countPeak(prv) {
   // if (prv.length <= resetThres * 2)
@@ -49,6 +94,27 @@ function countPeak(prv) {
   return Math.floor((cnt - 1) / 2) * st[0];
 }
 
+function getlisturl(p){
+  if(p)
+    currentlist = (currentlist + 1) % listnum;
+  else
+    currentlist = (currentlist + listnum - 1) % listnum;
+  return playlist(currentlist); 
+}
+
+function setlist(n){
+  if(music != null){
+    music.write('q');
+    music.kill();
+  }
+  mp3_list = [];
+  for (var i = 0; i < n; ++i)
+    mp3_list.push(music_dir + String(i) + '.mp3')
+  madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
+  music = pty.spawn('madplay', madplay_opt);
+  console.log('start playing music!');
+}
+
 // Initialize the accelerometer.
 accel.on('ready', function () {
   // Stream accelerometer data
@@ -62,7 +128,15 @@ accel.on('ready', function () {
 
       if (needReset(prvX)) {
         var numPeak = countPeak(prvX);
-        if (numPeak >= 2) {
+        if (numPeak >= 3) {
+          console.log('next list');
+          list = getlisturl(true);
+          song_num = downloadlist(list, music_dir, dl);
+          console.log('continue!');
+          setlist(song_num);
+          console.log('next list----------');
+        }
+        else if (numPeak == 2) {
           music.write('f');
           console.log('next song');
         }
@@ -80,6 +154,13 @@ accel.on('ready', function () {
           music.write('b');
           music.write('b');
           console.log('previous song');
+        }
+        else if (numPeak <= -3) {
+          list = getlisturl(false);
+          song_num = downloadlist(list, music_dir, dl);
+          console.log('continue!');
+          setlist(song_num);
+          console.log('previous list');
         }
         prvX.length = 0;
       }
@@ -102,15 +183,12 @@ accel.on('ready', function () {
   });
 });
 
+song_num = downloadlist(playlist[0], music_dir, dl);
+console.log("yoyo");
+setlist(song_num);
 accel.on('error', function(err){
   console.log('Error:', err);
 });
-
-mp3_list = []
-for (var i = 0; i < 3; ++i)
-  mp3_list.push('mnt/sda/music' + String(i) + '.mp3')
-madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
-
 rfid.on('ready', function (version) {
   console.log('Ready to read RFID card');
 
@@ -132,19 +210,3 @@ rfid.on('error', function (err) {
   console.error(err);
 });
 
-// var fs = require('fs');
-// var path = require('path');
-// var mountPoint = '/mnt/sda1'; // The first flash drive you plug in will be mounted here, the second will be at '/mnt/sdb1'
-// var filepath = path.join(mountPoint, 'myFile.txt');
-// 
-// var textToWrite = 'Hello Tessel!';
-// 
-// // Write the text to a file on the flash drive
-// fs.writeFile(filepath, textToWrite, function () {
-//   console.log('Wrote', textToWrite, 'to', filepath, 'on USB mass storage device.');
-// });
-// 
-// // Read the text we wrote from the file
-// fs.readFile(filepath, function (err, data) {
-//   console.log('Read', data.toString(), 'from USB mass storage device.');
-// });
