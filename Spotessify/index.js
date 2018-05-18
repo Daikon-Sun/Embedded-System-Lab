@@ -3,8 +3,6 @@ const accel = require('accel-mma84').use(tessel.port.B);
 const rfidlib = require('rfid-pn532');
 const request = require("request");
 const cheerio = require("cheerio");
-const ytdl = require("ytdl-core");
-const Downloader = require("./downloader");
 var rfid = rfidlib.use(tessel.port.A);
 var pty = require('node-pty');
 var music = null;
@@ -29,7 +27,61 @@ const list_prefix = 'https://www.youtube.com/playlist?list=';
 var listnum = playlist.length;
 var currentlist = 0;
 var music_dir = '/mnt/sda/music';
-var madplay_opt
+var madplay_opt;
+console.log("test");
+var YoutubeMp3Downloader = require("youtube-mp3-downloader");
+
+var Downloader = function() {
+
+    var self = this;
+    
+    //Configure YoutubeMp3Downloader with your settings
+    self.YD = new YoutubeMp3Downloader({
+        "ffmpegPath": "/usr/bin/ffmpeg",        // Where is the FFmpeg binary located?
+        "outputPath": music_dir,    // Where should the downloaded and encoded files be stored?
+        "youtubeVideoQuality": "highest",       // What video quality should be used?
+        "queueParallelism": 2,                  // How many parallel downloads/encodes should be started?
+        "progressTimeout": 2000                 // How long should be the interval of the progress reports
+    });
+
+    self.callbacks = {};
+
+    self.YD.on("finished", function(error, data) {
+    
+        if (self.callbacks[data.videoId]) {
+            self.callbacks[data.videoId](error, data);
+        } else {
+            console.log("Error: No callback for videoId!");
+        }
+    
+    });
+
+    self.YD.on("error", function(error, data) {
+  
+        console.error(error + " on videoId " + data.videoId);
+    
+        if (self.callbacks[data.videoId]) {
+            self.callbacks[data.videoId](error, data);
+        } else {
+            console.log("Error: No callback for videoId!");
+        }
+     
+    });
+
+};
+
+Downloader.prototype.getMP3 = function(track, callback){
+
+    var self = this;
+  
+    // Register callback
+    console.log("register");
+    self.callbacks[track.videoId] = callback;
+    console.log("ready to download");
+    // Trigger download
+    self.YD.download(track.videoId, track.name);
+
+};
 
 function needReset(prv) {
   if (prv.length < resetThres)
@@ -41,6 +93,19 @@ function needReset(prv) {
   return true;
 }
 
+
+function setlist(n){
+  if(music != null){
+    music.write('q');
+    music.kill();
+  }
+  mp3_list = [];
+  for (var i = 0; i < n; ++i)
+    mp3_list.push(music_dir + String(i) + '.mp3')
+  madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
+  music = pty.spawn('madplay', madplay_opt);
+  console.log('start playing music!');
+}
 function downloadlist(listurl, dl){
 request({
   url: listurl,
@@ -63,11 +128,12 @@ request({
       else{
         let name = res.file.toString().split("/");
         console.log("Song was downloaded: " + res.file);
-        count--;  
+        count--;
+        if(count == 0)
+          setlist(song_num);
       }
     });
   }
-  while(count !=0){}
   console.log("Finish all download!");
   return hrefs.length;
 })}
@@ -102,19 +168,6 @@ function getlisturl(p){
   return playlist(currentlist); 
 }
 
-function setlist(n){
-  if(music != null){
-    music.write('q');
-    music.kill();
-  }
-  mp3_list = [];
-  for (var i = 0; i < n; ++i)
-    mp3_list.push(music_dir + String(i) + '.mp3')
-  madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
-  music = pty.spawn('madplay', madplay_opt);
-  console.log('start playing music!');
-}
-
 // Initialize the accelerometer.
 accel.on('ready', function () {
   // Stream accelerometer data
@@ -131,10 +184,9 @@ accel.on('ready', function () {
         if (numPeak >= 3) {
           console.log('next list');
           list = getlisturl(true);
-          song_num = downloadlist(list, music_dir, dl);
+          downloadlist(list, music_dir, dl);
           console.log('continue!');
-          setlist(song_num);
-          console.log('next list----------');
+          console.log('will go to next list----------');
         }
         else if (numPeak == 2) {
           music.write('f');
@@ -189,6 +241,15 @@ setlist(song_num);
 accel.on('error', function(err){
   console.log('Error:', err);
 });
+<<<<<<< HEAD
+=======
+
+mp3_list = []
+for (var i = 0; i < 3; ++i)
+  mp3_list.push('/mnt/sda/music' + String(i) + '.mp3')
+madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
+
+>>>>>>> refs/remotes/origin/master
 rfid.on('ready', function (version) {
   console.log('Ready to read RFID card');
 
