@@ -1,3 +1,4 @@
+// Require
 const tessel = require('tessel');
 const accel = require('accel-mma84').use(tessel.port.B);
 const rfidlib = require('rfid-pn532');
@@ -5,7 +6,8 @@ const request = require("request");
 const cheerio = require("cheerio");
 const rfid = rfidlib.use(tessel.port.A);
 const pty = require('node-pty');
-var music = null;
+const fs = require('fs');
+const ytdl = require('ytdl-core');
 var mp3_list = [];
 var chart = require('chart-stream')(function (url) {
   console.log('Open %s in your browser to see the chart', url)
@@ -23,74 +25,30 @@ const moveRange = 0.65;
 const maxHist = 50;
 const histRate = 40;
 
+// Path
+const playlist_prefix = 'https://www.youtube.com/playlist?list=';
+const watch_prefix = 'https://www.youtube.com/watch?v=';
+const music_dir = '/mnt/sdb/music_';
+
 // Initialize
-var cntHist = 0;
-chart.write('x,y,z');
-var prvX = [], prvZ = [];
-var dl = new Downloader();
 const playlist = [
-  "PL6hLX4jbv8SaJrZbyWi0BaMn27vOgSTIo",
-  "PL6hLX4jbv8Sa_LCpyiPbiY_H_9X_Ac-MG"
+  'PL6hLX4jbv8SZgIydhJ4CavKJGT9n89v2z',
+  'PL6hLX4jbv8SYebYEsq5Vx3Csvs8UhkU6o'
+  // 'PL6hLX4jbv8SaJrZbyWi0BaMn27vOgSTIo',
+  // 'PL6hLX4jbv8Sa_LCpyiPbiY_H_9X_Ac-MG'
 ];
-const list_prefix = 'https://www.youtube.com/playlist?list=';
-var listnum = playlist.length;
-var currentlist = 0;
-var music_dir = '/mnt/sda/music';
+var numSongs = [];
+chart.write('x,y,z');
+var cntHist = 0;
+var prvX = [], prvZ = [];
+var currentList = 0;
 var madplay_opt;
-console.log("test");
-var YoutubeMp3Downloader = require("youtube-mp3-downloader");
+var music = null;
+var numDownloadList = 0;
 
-var Downloader = function() {
-
-    var self = this;
-    
-    //Configure YoutubeMp3Downloader with your settings
-    self.YD = new YoutubeMp3Downloader({
-        "ffmpegPath": "/usr/bin/ffmpeg",        // Where is the FFmpeg binary located?
-        "outputPath": music_dir,    // Where should the downloaded and encoded files be stored?
-        "youtubeVideoQuality": "highest",       // What video quality should be used?
-        "queueParallelism": 2,                  // How many parallel downloads/encodes should be started?
-        "progressTimeout": 2000                 // How long should be the interval of the progress reports
-    });
-
-    self.callbacks = {};
-
-    self.YD.on("finished", function(error, data) {
-    
-        if (self.callbacks[data.videoId]) {
-            self.callbacks[data.videoId](error, data);
-        } else {
-            console.log("Error: No callback for videoId!");
-        }
-    
-    });
-
-    self.YD.on("error", function(error, data) {
-  
-        console.error(error + " on videoId " + data.videoId);
-    
-        if (self.callbacks[data.videoId]) {
-            self.callbacks[data.videoId](error, data);
-        } else {
-            console.log("Error: No callback for videoId!");
-        }
-     
-    });
-
-};
-
-Downloader.prototype.getMP3 = function(track, callback){
-
-    var self = this;
-  
-    // Register callback
-    console.log("register");
-    self.callbacks[track.videoId] = callback;
-    console.log("ready to download");
-    // Trigger download
-    self.YD.download(track.videoId, track.name);
-
-};
+for (var i = 0; i < playlist.length; ++i) {
+  downloadList(playlist_prefix + playlist[i], i);
+}
 
 function needReset(prv) {
   if (prv.length < resetThres)
@@ -102,54 +60,34 @@ function needReset(prv) {
   return true;
 }
 
-
-function setlist(n){
-  if(music != null){
-    music.write('q');
-    music.kill();
+function getMP3(hrefs, pid, c, cc) {
+  if (c == cc) {
+    ++numDownloadList;
+    return;
   }
-  mp3_list = [];
-  for (var i = 0; i < n; ++i)
-    mp3_list.push(music_dir + String(i) + '.mp3')
-  madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
-  music = pty.spawn('madplay', madplay_opt);
-  console.log('start playing music!');
+  var fn = music_dir + pid + '_' + c.toString()
+  var readStream = ytdl(watch_prefix + hrefs[c], {quality:'lowest', filter:'audioonly'});
+  readStream.pipe(fs.createWriteStream(fn + '.mp2'));
+  readStream.on('end', function() {
+    getMP3(hrefs, pid, c+1, cc);
+  });
 }
-function downloadlist(listurl, dl){
-request({
-  url: listurl,
-  method: "GET"
-},function(e, r, b){
-  if(e || !b){return;}
-  var $ = cheerio.load(b);
-  var hrefs=[];
-  $('.pl-video.yt-uix-tile a.pl-video-title-link.yt-uix-tile-link').each(function(i, element){
-    var a = $(this);
-    hrefs.push($(this).attr('href').split("&")[0].split("=")[1]);
-  })
-  //console.log(hrefs);
-  let count = hrefs.length;
-  for(var i = 0; i < hrefs.length; i++){
-    dl.getMP3({videoId: hrefs[i], name: ("music_"+i.toString()+".mp3")}, function(err,res){
-      console.log("getMP3");
-      if(err)
-        throw err;
-      else{
-        let name = res.file.toString().split("/");
-        console.log("Song was downloaded: " + res.file);
-        count--;
-        if(count == 0)
-          setlist(song_num);
-      }
-    });
-  }
-  console.log("Finish all download!");
-  return hrefs.length;
-})}
 
+function downloadList(listUrl, pid) {
+  request({url: listUrl, method: "GET"}, function(e, r, b) {
+
+    if(e || !b)
+      return;
+    var $ = cheerio.load(b);
+    var hrefs=[];
+    $('.pl-video.yt-uix-tile a.pl-video-title-link.yt-uix-tile-link').each(function(i, element) {
+      hrefs.push($(this).attr('href').split("&")[0].split("=")[1]);
+    })
+    numSongs.push(hrefs.length);
+    // getMP3(hrefs, pid, 0, hrefs.length);
+  });
+}
 function countPeak(prv) {
-  // if (prv.length <= resetThres * 2)
-  //   return 0;
   var st = [];
   for (var i = 0; i < prv.length; ++i) {
     if (prv[i] > moveRange)
@@ -169,40 +107,46 @@ function countPeak(prv) {
   return Math.floor((cnt - 1) / 2) * st[0];
 }
 
-function getlisturl(p){
-  if(p)
-    currentlist = (currentlist + 1) % listnum;
+function updateList(p) {
+  if (p)
+    currentList = (currentList + 1) % playlist.length;
   else
-    currentlist = (currentlist + listnum - 1) % listnum;
-  return playlist(currentlist); 
+    currentList = (currentList + playlist.length - 1) % playlist.length;
+  updateMP3List();
+  music.write('q');
+  music.kill();
+  music = pty.spawn('madplay', madplay_opt);
+  console.log('start playing music!');
 }
 
+function updateMP3List() {
+  mp3_list.length = 0;
+  for (var i = 0; i < numSongs[currentList]; ++i)
+    mp3_list.push(music_dir + String(currentList) + '_' + String(i) + '.mp2')
+  madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
+}
 
-
-accel.on('ready', () => {
+accel.on('ready', function() {
   // Stream accelerometer data
-  accel.on('data', (xyz) => {
+  accel.on('data', function(xyz) {
     if (music != null) {
       x = xyz[0], y = xyz[1], z = xyz[2];
-      cntHist += 1;
+      ++cntHist;
       if (cntHist == histRate) {
         chart.write((x*100) + ',' + (y*100) + ',' + ((z-1)*100));
         cntHist = 0;
       }
-      console.log(x, y, z);
+      // console.log(x, y, z);
       if (Math.abs(x) > moveRange || prvX.length != 0)
         prvX.push(x);
       if (Math.abs(z-1) > moveRange || prvZ.length != 0)
-        prvZ.push(z-1);
+        prvZ.push((z-1) / 1.3);
 
       if (needReset(prvX)) {
         var numPeak = countPeak(prvX);
         if (numPeak >= 3) {
           console.log('next list');
-          list = getlisturl(true);
-          downloadlist(list, music_dir, dl);
-          console.log('continue!');
-          console.log('will go to next list----------');
+          updateList(true);
         }
         else if (numPeak == 2) {
           music.write('f');
@@ -224,10 +168,7 @@ accel.on('ready', () => {
           console.log('previous song');
         }
         else if (numPeak <= -3) {
-          list = getlisturl(false);
-          song_num = downloadlist(list, music_dir, dl);
-          console.log('continue!');
-          setlist(song_num);
+          updateList(false);
           console.log('previous list');
         }
         prvX.length = 0;
@@ -251,17 +192,19 @@ accel.on('ready', () => {
   });
 });
 
-song_num = downloadlist(playlist[0], music_dir, dl);
-console.log("yoyo");
-setlist(song_num);
 accel.on('error', function(err){
   console.log('Error:', err);
 });
 
-rfid.on('ready', (version) => {
+rfid.on('ready', function(version) {
   console.log('Ready to read RFID card');
-  rfid.on('data', (card) => {
+  rfid.on('data', function(card) {
+    // if (numDownloadList != playlist.length) {
+    //   console.log('still downloading!');
+    //   return;
+    // }
     if (music == null) {
+      updateMP3List();
       music = pty.spawn('madplay', madplay_opt);
       console.log('start playing music!');
     } else {
@@ -273,4 +216,4 @@ rfid.on('ready', (version) => {
     // console.log('UID:', card.uid.toString('hex'));
   });
 });
-rfid.on('error', (err) => { console.error(err); });
+rfid.on('error', function(err) { console.error(err); });
