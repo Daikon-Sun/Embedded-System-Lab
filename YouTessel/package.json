@@ -1,8 +1,17 @@
 {
-  "name": "Spotessify",
+  "name": "YouTessel",
   "version": "0.0.0",
   "description": "Tessel project",
   "main": "index.js",
+  "dependencies": {
+    "accel-mma84": "^0.2.4",
+    "chart-stream": "^1.1.1",
+    "install": "^0.11.0",
+    "node-pty": "^0.7.4",
+    "rfid-pn532": "^0.1.9",
+    "youtube-mp3-downloader": "^0.5.3"
+  },
+  "devDependencies": {},
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -11,13 +20,5 @@
     "Tessel"
   ],
   "license": "MIT",
-  "readme": "A bare bones Tessel 2 blinky script.",
-  "dependencies": {
-    "accel-mma84": "^0.2.4",
-    "chart-stream": "^1.1.1",
-    "install": "^0.11.0",
-    "node-pty": "^0.7.4",
-    "rfid-pn532": "^0.1.9",
-    "youtube-mp3-downloader": "^0.5.3"
-  }
+  "readme": "A bare bones Tessel 2 blinky script."
 }
