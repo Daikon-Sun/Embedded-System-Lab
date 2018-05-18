@@ -3,20 +3,29 @@ const accel = require('accel-mma84').use(tessel.port.B);
 const rfidlib = require('rfid-pn532');
 const request = require("request");
 const cheerio = require("cheerio");
-var rfid = rfidlib.use(tessel.port.A);
-var pty = require('node-pty');
+const rfid = rfidlib.use(tessel.port.A);
+const pty = require('node-pty');
 var music = null;
 var mp3_list = [];
-// [ 800, 400, 200, 100, 50, 12.5, 6.25, 1.56 ] Hz
-var rate = accel.availableOutputRates()[0];
-accel.setOutputRate(rate);
-var resetThres = rate / 8;
-// [ 2, 4, 8 ] Gs
-var range = accel.availableScaleRanges()[2];
-accel.setScaleRange(range); 
-var freezeRange = 0.35;
-var moveRange = 0.65;
+var chart = require('chart-stream')(function (url) {
+  console.log('Open %s in your browser to see the chart', url)
+})
 
+// [ 800, 400, 200, 100, 50, 12.5, 6.25, 1.56 ] Hz
+const rate = accel.availableOutputRates()[0];
+accel.setOutputRate(rate);
+const resetThres = rate / 8;
+// [ 2, 4, 8 ] Gs
+const range = accel.availableScaleRanges()[2];
+accel.setScaleRange(range); 
+const freezeRange = 0.35;
+const moveRange = 0.65;
+const maxHist = 50;
+const histRate = 40;
+
+// Initialize
+var cntHist = 0;
+chart.write('x,y,z');
 var prvX = [], prvZ = [];
 var dl = new Downloader();
 const playlist = [
@@ -168,12 +177,19 @@ function getlisturl(p){
   return playlist(currentlist); 
 }
 
-// Initialize the accelerometer.
-accel.on('ready', function () {
+
+
+accel.on('ready', () => {
   // Stream accelerometer data
-  accel.on('data', function (xyz) {
+  accel.on('data', (xyz) => {
     if (music != null) {
-      x = xyz[0], z = xyz[2];
+      x = xyz[0], y = xyz[1], z = xyz[2];
+      cntHist += 1;
+      if (cntHist == histRate) {
+        chart.write((x*100) + ',' + (y*100) + ',' + ((z-1)*100));
+        cntHist = 0;
+      }
+      console.log(x, y, z);
       if (Math.abs(x) > moveRange || prvX.length != 0)
         prvX.push(x);
       if (Math.abs(z-1) > moveRange || prvZ.length != 0)
@@ -241,19 +257,10 @@ setlist(song_num);
 accel.on('error', function(err){
   console.log('Error:', err);
 });
-<<<<<<< HEAD
-=======
 
-mp3_list = []
-for (var i = 0; i < 3; ++i)
-  mp3_list.push('/mnt/sda/music' + String(i) + '.mp3')
-madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
-
->>>>>>> refs/remotes/origin/master
-rfid.on('ready', function (version) {
+rfid.on('ready', (version) => {
   console.log('Ready to read RFID card');
-
-  rfid.on('data', function(card) {
+  rfid.on('data', (card) => {
     if (music == null) {
       music = pty.spawn('madplay', madplay_opt);
       console.log('start playing music!');
@@ -266,8 +273,4 @@ rfid.on('ready', function (version) {
     // console.log('UID:', card.uid.toString('hex'));
   });
 });
-
-rfid.on('error', function (err) {
-  console.error(err);
-});
-
+rfid.on('error', (err) => { console.error(err); });
