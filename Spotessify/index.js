@@ -1,60 +1,45 @@
-var tessel = require('tessel');
-var accel = require('accel-mma84').use(tessel.port.B);
-var rfidlib = require('rfid-pn532');
-var rfid = rfidlib.use(tessel.port.A);
-var pty = require('node-pty');
-var music = null;
+const tessel = require('tessel');
+const accel = require('accel-mma84').use(tessel.port.B);
+const rfidlib = require('rfid-pn532');
+const rfid = rfidlib.use(tessel.port.A);
+const pty = require('node-pty');
+var chart = require('chart-stream')(function (url) {
+  console.log('Open %s in your browser to see the chart', url)
+})
 
 // [ 800, 400, 200, 100, 50, 12.5, 6.25, 1.56 ] Hz
-var rate = accel.availableOutputRates()[0];
+const rate = accel.availableOutputRates()[0];
 accel.setOutputRate(rate);
-var resetThres = rate / 8;
+const resetThres = rate / 8;
 // [ 2, 4, 8 ] Gs
-var range = accel.availableScaleRanges()[2];
+const range = accel.availableScaleRanges()[2];
 accel.setScaleRange(range); 
-var freezeRange = 0.35;
-var moveRange = 0.65;
+const freezeRange = 0.35;
+const moveRange = 0.65;
+const maxHist = 50;
+const histRate = 40;
+
+// Initialize
+var cntHist = 0;
+var music = null;
+chart.write('x,y,z');
+mp3_list = []
+for (var i = 0; i < 3; ++i)
+  mp3_list.push('/mnt/sda/music' + String(i) + '.mp3')
+madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
 
 var prvX = [], prvZ = [];
-
-function needReset(prv) {
-  if (prv.length < resetThres)
-    return false;
-  for (var i = prv.length - 1; i >= prv.length - resetThres; --i) {
-    if (Math.abs(prv[i]) > freezeRange)
-      return false;
-  }
-  return true;
-}
-
-function countPeak(prv) {
-  // if (prv.length <= resetThres * 2)
-  //   return 0;
-  var st = [];
-  for (var i = 0; i < prv.length; ++i) {
-    if (prv[i] > moveRange)
-      st.push(1);
-    else if (prv[i] < -moveRange)
-      st.push(-1);
-  }
-  if (st.length == 0)
-    return 0;
-  var cur = st[0], cnt = 1;
-  for (var i = 1; i < st.length; ++i) {
-    if (st[i] != cur) {
-      ++cnt;
-      cur = st[i];
-    }
-  }
-  return Math.floor((cnt - 1) / 2) * st[0];
-}
-
-// Initialize the accelerometer.
-accel.on('ready', function () {
+accel.on('ready', () => {
   // Stream accelerometer data
-  accel.on('data', function (xyz) {
+  accel.on('data', (xyz) => {
     if (music != null) {
-      x = xyz[0], z = xyz[2];
+      x = xyz[0], y = xyz[1], z = xyz[2];
+      cntHist += 1;
+      if (cntHist == histRate) {
+        chart.write((x*100) + ',' + (y*100) + ',' + ((z-1)*100));
+        cntHist = 0;
+      }
+      console.log(x, y, z);
       if (Math.abs(x) > moveRange || prvX.length != 0)
         prvX.push(x);
       if (Math.abs(z-1) > moveRange || prvZ.length != 0)
@@ -102,19 +87,11 @@ accel.on('ready', function () {
   });
 });
 
-accel.on('error', function(err){
-  console.log('Error:', err);
-});
+accel.on('error', (err) => { console.log('Error:', err); });
 
-mp3_list = []
-for (var i = 0; i < 3; ++i)
-  mp3_list.push('/mnt/sda/music' + String(i) + '.mp3')
-madplay_opt = mp3_list.concat(['-a', -20, '--tty-control']);
-
-rfid.on('ready', function (version) {
+rfid.on('ready', (version) => {
   console.log('Ready to read RFID card');
-
-  rfid.on('data', function(card) {
+  rfid.on('data', (card) => {
     if (music == null) {
       music = pty.spawn('madplay', madplay_opt);
       console.log('start playing music!');
@@ -127,24 +104,36 @@ rfid.on('ready', function (version) {
     // console.log('UID:', card.uid.toString('hex'));
   });
 });
+rfid.on('error', (err) => { console.error(err); });
 
-rfid.on('error', function (err) {
-  console.error(err);
-});
+function needReset(prv) {
+  if (prv.length < resetThres)
+    return false;
+  for (var i = prv.length - 1; i >= prv.length - resetThres; --i) {
+    if (Math.abs(prv[i]) > freezeRange)
+      return false;
+  }
+  return true;
+}
 
-// var fs = require('fs');
-// var path = require('path');
-// var mountPoint = '/mnt/sda1'; // The first flash drive you plug in will be mounted here, the second will be at '/mnt/sdb1'
-// var filepath = path.join(mountPoint, 'myFile.txt');
-// 
-// var textToWrite = 'Hello Tessel!';
-// 
-// // Write the text to a file on the flash drive
-// fs.writeFile(filepath, textToWrite, function () {
-//   console.log('Wrote', textToWrite, 'to', filepath, 'on USB mass storage device.');
-// });
-// 
-// // Read the text we wrote from the file
-// fs.readFile(filepath, function (err, data) {
-//   console.log('Read', data.toString(), 'from USB mass storage device.');
-// });
+function countPeak(prv) {
+  // if (prv.length <= resetThres * 2)
+  //   return 0;
+  var st = [];
+  for (var i = 0; i < prv.length; ++i) {
+    if (prv[i] > moveRange)
+      st.push(1);
+    else if (prv[i] < -moveRange)
+      st.push(-1);
+  }
+  if (st.length == 0)
+    return 0;
+  var cur = st[0], cnt = 1;
+  for (var i = 1; i < st.length; ++i) {
+    if (st[i] != cur) {
+      ++cnt;
+      cur = st[i];
+    }
+  }
+  return Math.floor((cnt - 1) / 2) * st[0];
+}
