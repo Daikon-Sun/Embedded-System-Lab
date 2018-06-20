@@ -1,0 +1,105 @@
+#go-board{
+  position: absolute;
+  top:20px;
+  left: 100px;
+  height: 500px;
+  width: 500px;
+  background-image: url('goboard.jpg');
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+}
+#board{
+  margin:0px;
+  position: relative;
+  height: 432px;
+  width: 432px;
+  top: 34px;
+  left: 34px;
+}
+
+.gobutton{
+  position:absolute;
+  padding: 0px;
+  margin:0px;
+  border:0;
+  border-collapse: collapse;
+  height:18px;
+  width:18px;
+  border-radius:50%;
+  -moz-border-radius:50%;
+  -webkit-border-radius:50%;
+
+}
+.gobutton-0{
+  background: none;
+}
+.gobutton-1{
+  background-color:#000;
+}
+.gobutton-2{
+  background-color:#fff;
+}
+
+
+
+#go-screen{
+  position:absolute;
+  top:30px;
+  left:650px;
+  height: 300px;
+  width: 200px;
+  float:left;
+  /*border-style: dashed;*/
+
+}
+
+.go-main-turn{
+  text-align:center;
+  font-size: 20px;
+  color: red;
+  border-radius: 10px;
+  border-style: solid;
+  border-color: red;
+}
+
+.go-main-exit:hover{
+  cursor: pointer;
+}
+
+#pass-button{
+  margin-top: 15px;
+}
+
+#pass-button:hover{
+  cursor: pointer;
+}
+
+.screen-alert{
+  margin-top: 15px;
+  text-align:center;
+  font-size: 16px;
+  color: red;
+}
+
+
+#go-title{
+  position: absolute;
+  top: 530px;
+  left:0px;
+  width: 700px;
+  text-align: center;
+  color: #111;
+  font-size: 26px;
+}
+.arrow-up{
+  position:absolute;
+  padding: 0px;
+  margin:0px;
+  border:0;
+  border-collapse: collapse;
+  width:0;
+  height:0;
+  border-left:5px solid transparent;
+  border-right:5px solid transparent;
+  border-bottom:5px solid red;
+}
