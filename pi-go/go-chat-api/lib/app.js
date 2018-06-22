@@ -295,15 +295,17 @@ var userNameList = {
   1: { name: "leela-zero-2", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 1, isBattle: false },
   2: { name: "leela-zero-3", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 2, isBattle: false },
   3: { name: " PhoenixGo-1", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 3, isBattle: false },
-  4: { name: " PhoenixGo-2", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 4, isBattle: false }
+  4: { name: " PhoenixGo-2", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 4, isBattle: false },
+  5: { name: " PhoenixGo-2", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 5, isBattle: false }
 };
-var AInum = 5;
+var AInum = 6;
 var AIboard = {
   0: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
   1: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
   2: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
   3: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) },
-  4: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) }
+  4: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) },
+  5: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) }
 };
 var step_color = null;
 var s = { x: 0, y: 0 };
