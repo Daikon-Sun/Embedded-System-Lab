@@ -5,7 +5,6 @@ import React from 'react';
 class Go extends React.Component {
   constructor(props) {
     super(props);
-    console.log(this.props);
     let ss = 19;
     let e = new Array(ss);
     for(let i=0;i<ss;i++){
@@ -21,6 +20,7 @@ class Go extends React.Component {
       test:false,
       player:this.props.player,
       opponent:this.props.opponent,
+      opponent_name:this.props.getName(this.props.opponent),
       color:this.props.color,
       myturn:myturn,
       board:e,
@@ -32,6 +32,11 @@ class Go extends React.Component {
     };
 
     this.props.socket.on('server:onestep', message => {this.getstep(message)})
+    this.props.socket.on('server:logoutUser', message => {
+      if (message.user_key == this.state.opponent) {
+        this.setState({pass:2, s_alert:this.state.opponent_name + ' left!!! YOU WIN!!'});
+      }
+    });
   }
 
   findneighbor = (point, b, m, n) => {
@@ -165,7 +170,7 @@ class Go extends React.Component {
     }
     this.setState({board:b})
     if(this.state.test){
-        this.setState({ko:ko_h});
+      this.state.ko = ko_h;
     }
     return {update:true, ko_h:ko_h};
   }
@@ -247,7 +252,10 @@ class Go extends React.Component {
       return;
     }
     let k = this.state.pass;
-    this.props.socket.emit('client:onestep', {player: this.state.player, opponent: this.state.opponent, board:this.state.board, ko:[], pass: this.state.pass+1})
+    if(k < 2)
+      this.props.socket.emit('client:onestep', {player: this.state.player, opponent: this.state.opponent, board:this.state.board, ko:[], pass: this.state.pass+1})
+    else
+      console.log("don't send socket");
     if(k+1 >= 2)
       this.setState({s_alert:'GAME END'});
     else
@@ -273,7 +281,7 @@ class Go extends React.Component {
           {this.screen_alert()}
         </div>
         <div id='go-title'>
-          {this.props.getName(this.state.player)} vs {this.props.getName(this.state.opponent)}
+          {this.props.getName(this.state.player)} vs {this.state.opponent_name}
         </div>
       </div>
     );

@@ -62,7 +62,12 @@ class ChatLobby extends React.Component {
 
     this.socket.on('server:message', message => { this.addMessage(message); });
     this.socket.on('server:loginUser', message => { this.addMessage(message); });
-    this.socket.on('server:logoutUser', message => { this.addMessage(message); });
+    this.socket.on('server:logoutUser', message => {
+      this.addMessage(message);
+      if (message.user_key == this.state.opponent) {
+        //this.setState({isBattle: false, color: 0, opponent: null});
+      }
+    });
   }
 
   sendHandler = (message) => {
@@ -82,7 +87,6 @@ class ChatLobby extends React.Component {
   }
 
   clickType = (key) => {
-    console.log(key);
     if (key == this.state.user_key) {
       this.state.validImageUrl = null;
       this.setState({showSelectImageUrl: true});
@@ -95,10 +99,10 @@ class ChatLobby extends React.Component {
   printAllUser = (v, i) => {
     return (
       <Row key={i} className="signature" onClick={() => this.clickType(v.user_key)}>
-        <Col md={3} className="personal-figure">
+        <Col sm={3} md={3} className="personal-figure">
           <img src={v.url} width='39.8em' height='39.8em'/>
         </Col>
-        <Col md={9} className="personal-name">
+        <Col sm={9} md={9} className="personal-name">
           {v.name}
         </Col>
       </Row>
@@ -137,7 +141,7 @@ class ChatLobby extends React.Component {
     this.socket.emit('client:reject', {from: this.state.user_key, to: this.state.opponent, battling:0});
   }
   rejectMessage = () => {
-    return (<Modal.Body>{this.getName(this.state.pre_opponent)} is battling !</Modal.Body>);
+    // return (<Modal.Body>{this.getName(this.state.pre_opponent)} is battling !</Modal.Body>);
     if(this.state.opponent_battling)
       return (<Modal.Body>{this.getName(this.state.pre_opponent)} is battling !</Modal.Body>);
     else
@@ -159,24 +163,20 @@ class ChatLobby extends React.Component {
     this.setState({showNoMoreInvite: false});
   }
   clickSave = () => {
-    if (this.lastValidImageUrl){
-      for(let i = 0 ; i < this.state.usernameList.length; i++){
-        if(this.state.usernameList[i].user_key == this.state.user_key){
-          this.state.usernameList[i].url = this.lastValidImageUrl;
-          this.setState({usernameList:this.state.usernameList, showSelectImageUrl:false});
-          this.socket.emit('updateuserinfo', this.state.usernameList);
-          break;
-        }
-      }
+    if (this.lastValidImageUrl) {
+      this.state.usernameList[this.state.user_key].url = this.lastValidImageUrl;
+      this.setState({usernameList:this.state.usernameList, showSelectImageUrl:false});
+      this.socket.emit('updateuserinfo', this.state.usernameList);
     }
   }
   endBattle = () => {
     this.setState({isBattle: false, opponent: null, color: 0});
+    this.socket.emit('client:exit', {user:this.state.user_key});
   }
   getName = (key) => {
-    for (let i = 0; i < this.state.usernameList.length; ++i)
-      if (this.state.usernameList[i].user_key == key)
-        return this.state.usernameList[i].name;
+    if (this.state.usernameList[key]) {
+      return this.state.usernameList[key].name;
+    }
   }
 
   render() {
@@ -264,15 +264,15 @@ class ChatLobby extends React.Component {
         </Modal>
 
         <Row>
-          <Col md={9}>
+          <Col xs={9} sm={9} md={9}>
             <div className="container" id="Lobby">
               <h3>Go Chat Lobby</h3>
               <Messages messages={this.state.messages} />
               <ChatInput onSend={this.sendHandler} />
             </div>
           </Col>
-          <Col md={3}> {
-            this.state.usernameList.map(this.printAllUser)
+          <Col xs={3} sm={3} md={3}> {
+            Object.values(this.state.usernameList).map(this.printAllUser)
           } </Col>
         </Row>
       </Grid>

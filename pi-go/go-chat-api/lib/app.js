@@ -171,12 +171,6 @@ var EAT = function EAT(p, b) {
   }
 };
 var updatego = function updatego(p, b, color, ko) {
-  console.log("updatego");
-  console.log(p);
-  console.log(b);
-  console.log(color);
-  console.log(ko);
-
   var x = p.x;
   var y = p.y;
   // let b = this.state.board;
@@ -240,7 +234,6 @@ var updatego = function updatego(p, b, color, ko) {
   if (eaten.length > 0) {
     if (eaten.length == 1) {
       if (ko.length == 1 && eaten[0].x == ko[0].x && eaten[0].y == ko[0].y) {
-        //this.setState({s_alert:"KO!!"});
         console.log("KO!!");
         b[x][y] = 0;
         return { update: false, ko_h: [] };
@@ -258,7 +251,6 @@ var updatego = function updatego(p, b, color, ko) {
         border = _EAT.border;
 
     if (eat == true) {
-      //this.setState({s_alert:'Invalid position!'});
       console.log('Invalid position!');
       b[x][y] = 0;
       return { update: false, ko_h: [] };
@@ -298,9 +290,21 @@ var newboard = function newboard() {
   }
   return e;
 };
-var userNameList = [{ name: "leela-zero-1", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 0, isBattle: false }, { name: "leela-zero-2", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 1, isBattle: false }, { name: "leela-zero-3", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 2, isBattle: false }, { name: " PhoenixGo-1", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 3, isBattle: false }, { name: " PhoenixGo-2", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 4, isBattle: false }];
+var userNameList = {
+  0: { name: "leela-zero-1", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 0, isBattle: false },
+  1: { name: "leela-zero-2", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 1, isBattle: false },
+  2: { name: "leela-zero-3", url: "http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key: 2, isBattle: false },
+  3: { name: " PhoenixGo-1", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 3, isBattle: false },
+  4: { name: " PhoenixGo-2", url: "http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key: 4, isBattle: false }
+};
 var AInum = 5;
-var AIboard = [{ board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) }, { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) }, { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) }, { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) }, { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) }];
+var AIboard = {
+  0: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
+  1: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
+  2: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(leelaz_path, leelaz_args) },
+  3: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) },
+  4: { board: newboard(), ko: [], opponent: null, color: 0, pass: 0, engine: new Controller(phoenixgo_path, phoenixgo_args) }
+};
 var step_color = null;
 var s = { x: 0, y: 0 };
 var user_key = AInum;
@@ -310,8 +314,8 @@ socketIo.on('connection', function (socket) {
   var username = socket.handshake.query.username;
   var u_key = user_key;
   var newuser = { name: '' + username, url: defaultImageUrl, user_key: user_key, isBattle: false };
+  userNameList[user_key] = newuser;
   user_key++;
-  userNameList.push(newuser);
   console.log(username + ' connected');
   socket.broadcast.emit('server:returnAllUser', userNameList);
   socket.emit('server:first_return', { userNameList: userNameList, user_key: newuser.user_key });
@@ -322,7 +326,6 @@ socketIo.on('connection', function (socket) {
   };
   socket.broadcast.emit('server:loginUser', loginMessage);
   socket.on('client:message', function (data) {
-    //console.log(`${data.username}: ${data.message}`);
     socket.broadcast.emit('server:message', data);
   });
 
@@ -342,10 +345,9 @@ socketIo.on('connection', function (socket) {
           switch (_context2.prev = _context2.next) {
             case 0:
               o = message.opponent;
-              //console.log(message);
 
               if (!(o < AInum)) {
-                _context2.next = 21;
+                _context2.next = 22;
                 break;
               }
 
@@ -359,22 +361,21 @@ socketIo.on('connection', function (socket) {
               AIboard[o].board = message.board;
               AIboard[o].ko = message.ko;
               // play the opponent's move in engine
+              if (AIboard[o].color == 1) step_color = 'W';else step_color = 'B';
               play_command = '';
 
-              if (AIboard[o].pass == 1) play_command = 'play pass';else {
-                if (AIboard[o].color == 1) step_color = 'W';else step_color = 'B';
+              if (AIboard[o].pass == 1) play_command = 'play ' + step_color + ' pass';else {
                 play_command = 'play ' + step_color + ' ' + step_convert({ x: message.stepx, y: message.stepy }, false);
               }
-              _context2.next = 10;
+              _context2.next = 11;
               return engine_command(AIboard[o].engine, play_command);
 
-            case 10:
-              //console.log("finish play! outside");
+            case 11:
               if (AIboard[o].color == 1) step_color = 'B';else step_color = 'W';
-              _context2.next = 13;
+              _context2.next = 14;
               return engine_command(AIboard[o].engine, 'genmove ' + step_color);
 
-            case 13:
+            case 14:
               res = _context2.sent;
 
               s = { x: 0, y: 0 };
@@ -396,13 +397,13 @@ socketIo.on('connection', function (socket) {
                 userNameList[o].isBattle = false;
                 console.log("AI stop!");
               }
-              _context2.next = 22;
+              _context2.next = 23;
               break;
 
-            case 21:
+            case 22:
               socket.broadcast.emit('server:onestep', message);
 
-            case 22:
+            case 23:
             case 'end':
               return _context2.stop();
           }
@@ -420,14 +421,13 @@ socketIo.on('connection', function (socket) {
       while (1) {
         switch (_context3.prev = _context3.next) {
           case 0:
-            userNameList = userNameList.filter(function (v, i) {
-              return v.user_key != u_key;
-            });
+            delete userNameList[u_key];
             socket.broadcast.emit('server:returnAllUser', userNameList);
             console.log(username + ' disconnected');
             logoutMessage = {
               message: 'user ' + username + ' has logged out!',
-              fromServer: true
+              fromServer: true,
+              user_key: u_key
             };
 
             socket.broadcast.emit('server:logoutUser', logoutMessage);
@@ -445,7 +445,7 @@ socketIo.on('connection', function (socket) {
             }
 
             _context3.next = 10;
-            return AIboard[i].engine.stop();
+            return kIboard[i].engine.stop();
 
           case 10:
             userNameList[i].isBattle = false;
@@ -473,7 +473,7 @@ socketIo.on('connection', function (socket) {
           switch (_context4.prev = _context4.next) {
             case 0:
               if (!(from_to.to < AInum)) {
-                _context4.next = 24;
+                _context4.next = 25;
                 break;
               }
 
@@ -485,13 +485,14 @@ socketIo.on('connection', function (socket) {
               _return_message = { from: from_to.to, to: from_to.from, battling: 1 };
 
               socketIo.emit('server:reject', _return_message);
-              _context4.next = 22;
+              _context4.next = 23;
               break;
 
             case 6:
               o = from_to.to;
 
               userNameList[o].isBattle = true;
+              userNameList[from_to.from].isBattle = true;
               AIboard[o].opponent = from_to.from;
               AIboard[o].color = from_to.color;
               AIboard[o].engine.start();
@@ -500,15 +501,15 @@ socketIo.on('connection', function (socket) {
               socketIo.emit('server:accept', _return_message2);
 
               if (!(AIboard[o].color == 1)) {
-                _context4.next = 22;
+                _context4.next = 23;
                 break;
               }
 
               console.log("AI first move");
-              _context4.next = 17;
+              _context4.next = 18;
               return engine_command(AIboard[o].engine, 'genmove B');
 
-            case 17:
+            case 18:
               res = _context4.sent;
               _s = step_convert(res, true);
 
@@ -517,18 +518,18 @@ socketIo.on('connection', function (socket) {
 
               socketIo.emit('server:onestep', _return_message3);
 
-            case 22:
-              _context4.next = 25;
+            case 23:
+              _context4.next = 26;
               break;
 
-            case 24:
+            case 25:
               if (userNameList[from_to.to].isBattle == true) {
-                return_message = { from: from_to.to, to: form_to.from, battling: 1 };
+                return_message = { from: from_to.to, to: from_to.from, battling: 1 };
 
                 socketIo.emit('server:reject', return_message);
               } else socket.broadcast.emit('server:getInvitation', from_to);
 
-            case 25:
+            case 26:
             case 'end':
               return _context4.stop();
           }
@@ -547,6 +548,9 @@ socketIo.on('connection', function (socket) {
   });
   socket.on('client:reject', function (from_to) {
     socket.broadcast.emit('server:reject', from_to);
+  });
+  socket.on('client:exit', function (from_to) {
+    userNameList[from_to.user].isBattle = false;
   });
 });
 exports.default = app;

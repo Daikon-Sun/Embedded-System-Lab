@@ -94,12 +94,6 @@ var EAT = (p, b) => {
   }
 }
 var updatego = (p, b, color, ko) => {
-  console.log("updatego");
-  console.log(p);
-  console.log(b);
-  console.log(color);
-  console.log(ko);
-  
   let x = p.x;
   let y = p.y;
   // let b = this.state.board;
@@ -149,7 +143,6 @@ var updatego = (p, b, color, ko) => {
   if(eaten.length > 0){
     if(eaten.length == 1){
       if((ko.length==1) && (eaten[0].x == ko[0].x && eaten[0].y == ko[0].y)){
-        //this.setState({s_alert:"KO!!"});
         console.log("KO!!");
         b[x][y] = 0;
         return {update:false, ko_h:[]};
@@ -162,7 +155,6 @@ var updatego = (p, b, color, ko) => {
   else{// check invalid position
     let {eat, area, border} = EAT({x:x, y:y}, b);
     if(eat==true){
-      //this.setState({s_alert:'Invalid position!'});
       console.log('Invalid position!');
       b[x][y] = 0;
       return {update:false, ko_h:[]};
@@ -212,21 +204,21 @@ var newboard = () => {
   }
   return e;
 }
-var userNameList = [
-  {name: "leela-zero-1", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:0, isBattle:false},
-  {name: "leela-zero-2", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:1, isBattle:false},
-  {name: "leela-zero-3", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:2, isBattle:false},
-  {name:" PhoenixGo-1", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:3, isBattle:false},
-  {name:" PhoenixGo-2", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:4, isBattle:false}
-];
+var userNameList = {
+  0: {name: "leela-zero-1", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:0, isBattle:false},
+  1: {name: "leela-zero-2", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:1, isBattle:false},
+  2: {name: "leela-zero-3", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:2, isBattle:false},
+  3: {name:" PhoenixGo-1", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:3, isBattle:false},
+  4: {name:" PhoenixGo-2", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:4, isBattle:false}
+};
 var AInum = 5;
-var AIboard = [
-  {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
-  {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
-  {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
-  {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(phoenixgo_path, phoenixgo_args)},
-  {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(phoenixgo_path, phoenixgo_args)}
-];
+var AIboard = {
+  0: {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
+  1: {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
+  2: {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(leelaz_path, leelaz_args)},
+  3: {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(phoenixgo_path, phoenixgo_args)},
+  4: {board:newboard(), ko:[], opponent:null, color:0, pass:0, engine: new Controller(phoenixgo_path, phoenixgo_args)}
+};
 var step_color = null;
 var s = {x:0, y:0};
 var user_key = AInum;
@@ -236,8 +228,8 @@ socketIo.on('connection', socket => {
   const username = socket.handshake.query.username;
   const u_key = user_key;
   let newuser = {name: `${username}`, url:defaultImageUrl, user_key: user_key, isBattle:false};
+  userNameList[user_key] = newuser;
   user_key++;
-  userNameList.push(newuser);
   console.log(`${username} connected`);
   socket.broadcast.emit('server:returnAllUser', userNameList);
   socket.emit('server:first_return', {userNameList: userNameList, user_key:newuser.user_key});
@@ -248,7 +240,6 @@ socketIo.on('connection', socket => {
   };
   socket.broadcast.emit('server:loginUser', loginMessage);
   socket.on('client:message', data => {
-    //console.log(`${data.username}: ${data.message}`);
     socket.broadcast.emit('server:message', data);
   });
 
@@ -262,7 +253,6 @@ socketIo.on('connection', socket => {
 
   socket.on('client:onestep', async (message) => {
     var o = message.opponent
-    //console.log(message);
     if (o < AInum) {
       if(message.pass >= 2){
         console.log("AI stop!");
@@ -274,18 +264,17 @@ socketIo.on('connection', socket => {
       AIboard[o].board = message.board;
       AIboard[o].ko = message.ko;
       // play the opponent's move in engine
+      if(AIboard[o].color == 1)
+        step_color = 'W';
+      else
+        step_color = 'B';
       let play_command = '';
       if(AIboard[o].pass == 1)
-        play_command = 'play pass';
+        play_command = 'play ' + step_color + ' pass';
       else{ 
-        if(AIboard[o].color == 1)
-          step_color = 'W';
-        else
-          step_color = 'B';
         play_command = 'play ' + step_color + ' ' + step_convert({x:message.stepx, y:message.stepy}, false);
       }
       await engine_command(AIboard[o].engine, play_command);
-      //console.log("finish play! outside");
       if(AIboard[o].color == 1)
         step_color = 'B';
       else
@@ -315,17 +304,18 @@ socketIo.on('connection', socket => {
     } 
   });
   socket.on('disconnect', async () => {
-    userNameList = userNameList.filter((v, i) => (v.user_key != u_key))
+    delete userNameList[u_key];
     socket.broadcast.emit('server:returnAllUser', userNameList);
     console.log(`${username} disconnected`);
     const logoutMessage = {
       message: `user ${username} has logged out!`,
-      fromServer: true
+      fromServer: true,
+      user_key: u_key
     };
     socket.broadcast.emit('server:logoutUser', logoutMessage);
     for(let i = 0; i < AInum; i++){
       if(AIboard[i].opponent == u_key && userNameList[i].isBattle==true){
-        await AIboard[i].engine.stop()
+        await kIboard[i].engine.stop()
         userNameList[i].isBattle=false;
         console.log("client disconnect, AI stop!");
       }
@@ -340,6 +330,7 @@ socketIo.on('connection', socket => {
       } else {
         let o = from_to.to;
         userNameList[o].isBattle = true;
+        userNameList[from_to.from].isBattle = true;
         AIboard[o].opponent = from_to.from;
         AIboard[o].color = from_to.color;
         AIboard[o].engine.start()
@@ -356,7 +347,7 @@ socketIo.on('connection', socket => {
       }
     } else {
       if(userNameList[from_to.to].isBattle == true){
-        var return_message = {from:from_to.to, to:form_to.from, battling:1};
+        var return_message = {from:from_to.to, to:from_to.from, battling:1};
         socketIo.emit('server:reject', return_message);
       }
       else
@@ -370,6 +361,9 @@ socketIo.on('connection', socket => {
   });
   socket.on('client:reject', from_to => {
     socket.broadcast.emit('server:reject', from_to);
+  });
+  socket.on('client:exit', from_to => {
+    userNameList[from_to.user].isBattle = false;
   });
 
 });

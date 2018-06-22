@@ -32,7 +32,8 @@ class ChatInput extends React.Component {
           onChange={this.textChangeHandler}
           value={this.state.chatInput}
           placeholder="Write a message..."
-          required />
+          required style={{width:'90%', float:'left'}}/>
+        <input id="lobbyenter" type="submit" value="↵" style={{width:'10%', float:'right'}}/>
       </form>
     );
   }
