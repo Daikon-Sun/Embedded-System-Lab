@@ -317,7 +317,7 @@ socketIo.on('connection', socket => {
     socket.broadcast.emit('server:logoutUser', logoutMessage);
     for(let i = 0; i < AInum; i++){
       if(AIboard[i].opponent == u_key && userNameList[i].isBattle==true){
-        await kIboard[i].engine.stop()
+        await AIboard[i].engine.stop()
         userNameList[i].isBattle=false;
         console.log("client disconnect, AI stop!");
       }
