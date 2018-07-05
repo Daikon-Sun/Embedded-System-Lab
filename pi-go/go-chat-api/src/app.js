@@ -210,7 +210,7 @@ var userNameList = {
   2: {name: "leela-zero-3", url:"http://www.chessdom.com/wp-content/uploads/2018/04/LCZ.jpg", user_key:2, isBattle:false},
   3: {name:" PhoenixGo-1", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:3, isBattle:false},
   4: {name:" PhoenixGo-2", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:4, isBattle:false},
-  5: {name:" PhoenixGo-2", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:5, isBattle:false}
+  5: {name:" PhoenixGo-3", url:"http://i2.bangqu.com/lf1/news/20180429/5ae531728ceda.jpg", user_key:5, isBattle:false}
 };
 var AInum = 6;
 var AIboard = {
